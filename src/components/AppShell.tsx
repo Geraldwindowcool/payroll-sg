@@ -2,8 +2,8 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { getCompanies } from "@/lib/payrollService";
 import { getActiveCompany } from "@/lib/activeCompany";
-import { switchCompanyAction } from "@/app/actions/company";
 import { signOutAction } from "@/app/actions/auth";
+import CompanySwitcher from "@/components/CompanySwitcher";
 
 const ADMIN_TABS = [
   { href: "/admin", label: "Overview" },
@@ -38,20 +38,7 @@ export default async function AppShell({ children, active }: { children: React.R
             </div>
           </Link>
 
-          {companies.length > 0 && (
-            <form action={switchCompanyAction} className="flex items-center gap-2">
-              <select className="inp" name="companyId" defaultValue={activeCompany?.id} onChange={(e) => e.currentTarget.form?.requestSubmit()} style={{ width: "auto", maxWidth: 240 }} aria-label="Active company">
-                {companies.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              <noscript>
-                <button className="btn sm" type="submit">Switch</button>
-              </noscript>
-            </form>
-          )}
+          <CompanySwitcher companies={companies} activeId={activeCompany?.id} />
 
           <div className="flex-1" />
 

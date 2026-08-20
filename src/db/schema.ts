@@ -135,6 +135,11 @@ export const employees = pgTable(
     active: boolean("active").notNull().default(true),
     cdacOn: boolean("cdac_on").notNull().default(false),
     cdacAmt: numeric("cdac_amt", { mode: "number", precision: 10, scale: 2 }),
+    // Leave entitlement — a common feature in off-the-shelf HR/payroll apps
+    // (Talenox, Swingvy, HReasily etc. all track balances against an
+    // entitlement). Days per calendar year; editable per employee.
+    alEntitlement: numeric("al_entitlement", { mode: "number", precision: 5, scale: 1 }).notNull().default(14),
+    mcEntitlement: numeric("mc_entitlement", { mode: "number", precision: 5, scale: 1 }).notNull().default(14),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

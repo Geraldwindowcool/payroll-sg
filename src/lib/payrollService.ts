@@ -11,7 +11,7 @@ import {
   type Company as CompanyRow,
   type Employee as EmployeeRow,
 } from "@/db/schema";
-import { and, eq, gte, lt, inArray } from "drizzle-orm";
+import { and, eq, gte, like, lt, inArray } from "drizzle-orm";
 import {
   CompanyConfig,
   EmployeeCalc,
@@ -295,6 +295,26 @@ export async function getMonthPayrollForEmployee(employeeId: string, ym: string)
   const emp = toEmployeeCalc(empRow, levyAmt);
   const ytd = await ytdBefore(company, emp, ym, allowanceDefs, empAllowances);
   return calcMonth(company, emp, ym, weeks, monthlyItem, ytd, allowanceDefs, empAllowances);
+}
+
+/** MC / paid-leave / unpaid-leave days taken so far in a calendar year, per
+ *  employee — the balance side of each employee's alEntitlement/mcEntitlement.
+ *  A basic version of the "leave balance" feature common to off-the-shelf
+ *  HR apps (Talenox, Swingvy, HReasily, etc.). */
+export async function getLeaveUsageForYear(companyId: string, year: number): Promise<Map<string, { mc: number; pl: number; ul: number }>> {
+  const rows = await db
+    .select()
+    .from(timesheetWeeks)
+    .where(and(eq(timesheetWeeks.companyId, companyId), like(timesheetWeeks.ym, `${year}-%`)));
+  const out = new Map<string, { mc: number; pl: number; ul: number }>();
+  for (const r of rows) {
+    const cur = out.get(r.employeeId) ?? { mc: 0, pl: 0, ul: 0 };
+    cur.mc += r.mc;
+    cur.pl += r.pl;
+    cur.ul += r.ul;
+    out.set(r.employeeId, cur);
+  }
+  return out;
 }
 
 /** Every "YYYY-MM" that has any timesheet or monthly-item data for a company, newest first. */
