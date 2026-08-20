@@ -1,4 +1,5 @@
 import AppShell from "@/components/AppShell";
+import Link from "next/link";
 import { getActiveCompany } from "@/lib/activeCompany";
 import { getEmployees, getWeekTimesheetsForCompanyMonth, toCompanyConfig } from "@/lib/payrollService";
 import { calcWeek, weeksOfMonth, EMPTY_WEEK, n2 } from "@/lib/payroll";
@@ -66,9 +67,9 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
               <div className="hint" style={{ marginBottom: 6 }}>Week</div>
               <div className="weekrow" role="group" aria-label="Week">
                 {weeks.map((w) => (
-                  <a key={w.i} href={`/leave?ym=${ym}&w=${w.i}`} className={w.i === weekIndex ? "on" : ""} title={w.range}>
+                  <Link key={w.i} href={`/leave?ym=${ym}&w=${w.i}`} className={w.i === weekIndex ? "on" : ""} title={w.range} prefetch>
                     {w.label}
-                  </a>
+                  </Link>
                 ))}
               </div>
             </div>

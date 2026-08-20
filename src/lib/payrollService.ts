@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { db } from "@/db";
 import {
   companies,
@@ -55,9 +56,12 @@ export function toEmployeeCalc(e: EmployeeRow, levyAmt: number): EmployeeCalc {
   };
 }
 
-export async function getCompanies() {
+// Cached per-request (React's cache()) — AppShell and the page it wraps
+// both need the company list on every navigation, so without this every
+// click would hit Postgres for the same rows two or three times over.
+export const getCompanies = cache(async function getCompanies() {
   return db.select().from(companies).orderBy(companies.createdAt);
-}
+});
 
 export async function getCompany(companyId: string) {
   const [c] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);

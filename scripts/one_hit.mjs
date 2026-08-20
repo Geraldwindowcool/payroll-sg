@@ -1,0 +1,11 @@
+import { chromium } from "playwright";
+const BASE = "http://localhost:3000";
+const b = await chromium.launch();
+const p = await b.newPage();
+await p.goto(`${BASE}/login`);
+await p.fill('input[name="email"]', "preview@example.com");
+await p.fill('input[name="password"]', "preview12345");
+await p.click('button[type="submit"]');
+await p.waitForURL(/\/admin/, { timeout: 10000 });
+await p.goto(`${BASE}/admin/employees`, { waitUntil: "networkidle" });
+await b.close();
