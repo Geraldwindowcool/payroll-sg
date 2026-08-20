@@ -31,12 +31,13 @@ export default async function PayRunPage({ searchParams }: { searchParams: Promi
 
   return (
     <AppShell active="/admin/payrun">
-      <div className="flex items-center justify-between flex-wrap gap-3" style={{ marginBottom: 16 }}>
+      <div className="page-head">
         <div>
-          <h1 style={{ fontSize: 26 }}>Pay run</h1>
-          <span className="hint">{company.name} — review before you pay out.</span>
+          <div className="eyebrow">{company.name}</div>
+          <h1>Pay run</h1>
+          <div className="sub">Review before you pay out.</div>
         </div>
-        <form method="get" className="flex items-center gap-2">
+        <form method="get" className="actions">
           <input className="inp" type="month" name="ym" defaultValue={ym} style={{ width: 160 }} />
           <button className="btn sm" type="submit">Go</button>
         </form>
@@ -82,7 +83,13 @@ export default async function PayRunPage({ searchParams }: { searchParams: Promi
                       <td className="n">{money(r.levy)}</td>
                       <td className="n strong">{money(r.net)}</td>
                       <td className="n">{money(r.cost)}</td>
-                      <td>{flags.map((f) => <span key={f} className="pill amber" style={{ marginRight: 4, marginBottom: 2 }}>{f}</span>)}</td>
+                      <td>
+                        {flags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {flags.map((f) => <span key={f} className="pill amber">{f}</span>)}
+                          </div>
+                        )}
+                      </td>
                       <td><Link href={`/admin/payslips?ym=${ym}&emp=${r.emp.id}`} className="btn sm">Explain</Link></td>
                     </tr>
                   );
@@ -103,7 +110,7 @@ export default async function PayRunPage({ searchParams }: { searchParams: Promi
               </tfoot>
             </table>
           </div>
-          <div className="bd flex items-center gap-3" style={{ borderTop: "1px solid var(--line)" }}>
+          <div className="bd flex items-center gap-3 flex-wrap" style={{ borderTop: "1px solid var(--line)" }}>
             <Link href={`/admin/payslips?ym=${ym}`} className="btn">Print all payslips</Link>
             <Link href={`/admin/bank?ym=${ym}`} className="btn">Bank file</Link>
             <span className="hint">Total cost to company this month: <b>{money0(totals.cost)}</b></span>

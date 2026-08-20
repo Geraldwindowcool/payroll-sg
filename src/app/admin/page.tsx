@@ -35,36 +35,36 @@ export default async function AdminOverview() {
 
   return (
     <AppShell active="/admin">
-      <div style={{ marginBottom: 24 }}>
-        <div className="hint" style={{ fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.07em", fontSize: 11, marginBottom: 8 }}>
-          {company.name} — {new Date(ym + "-01").toLocaleString("en-SG", { month: "long", year: "numeric" })}
+      <div className="page-head">
+        <div>
+          <div className="eyebrow">{company.name} — {new Date(ym + "-01").toLocaleString("en-SG", { month: "long", year: "numeric" })}</div>
+          <h1>This month, at a glance.</h1>
         </div>
-        <h1 style={{ fontSize: 30, marginBottom: 6 }}>This month, at a glance.</h1>
       </div>
 
-      <div className="grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
-        <Stat k="Active employees" v={String(activeCount)} m="on the payroll" />
-        <Stat k="Gross this month" v={money0(gross)} m={ym} />
-        <Stat k="Net to pay" v={money0(net)} m="after employee CPF" />
-        <Stat k="Total cost to company" v={money0(cost)} m="incl. employer CPF, SDL, levy" accent />
-      </div>
-
-      <div className="card">
-        <div className="hd">
-          <h2 style={{ fontSize: 16 }}>Start here</h2>
+      <div className="stack-lg">
+        <div className="stats">
+          <Stat k="Active employees" v={String(activeCount)} m="on the payroll" />
+          <Stat k="Gross this month" v={money0(gross)} m={ym} />
+          <Stat k="Net to pay" v={money0(net)} m="after employee CPF" />
+          <Stat k="Total cost to company" v={money0(cost)} m="incl. employer CPF, SDL, levy" accent />
         </div>
-        <div className="bd">
-          {checklist.map((c, i) => (
-            <div key={i} className="flex items-center gap-3" style={{ padding: "10px 0", borderBottom: i < checklist.length - 1 ? "1px solid var(--line)" : "none" }}>
-              <span className={`pill ${c.done ? "green" : "gray"}`} style={{ minWidth: 20, textAlign: "center" }}>
-                {c.done ? "✓" : i + 1}
-              </span>
-              <span style={{ flex: 1 }}>{c.label}</span>
-              <Link href={c.href} className="btn sm">
-                Go
-              </Link>
-            </div>
-          ))}
+
+        <div className="card">
+          <div className="hd">
+            <h2>Start here</h2>
+          </div>
+          <div className="bd checklist">
+            {checklist.map((c, i) => (
+              <div key={i} className="row">
+                <span className={`num ${c.done ? "green" : "gray"}`}>{c.done ? "✓" : i + 1}</span>
+                <span className="flex-1">{c.label}</span>
+                <Link href={c.href} className="btn sm">
+                  Go
+                </Link>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </AppShell>
@@ -73,12 +73,10 @@ export default async function AdminOverview() {
 
 function Stat({ k, v, m, accent }: { k: string; v: string; m: string; accent?: boolean }) {
   return (
-    <div className="card" style={accent ? { borderColor: "var(--ink)" } : {}}>
-      <div className="bd">
-        <div className="hint" style={{ fontFamily: "var(--font-mono)", textTransform: "uppercase", fontSize: 10.5, letterSpacing: "0.06em" }}>{k}</div>
-        <div style={{ fontSize: 24, fontFamily: "var(--font-serif)", margin: "4px 0" }}>{v}</div>
-        <div className="hint" style={{ fontSize: 12 }}>{m}</div>
-      </div>
+    <div className={`stat ${accent ? "accent" : ""}`}>
+      <div className="k">{k}</div>
+      <div className="v">{v}</div>
+      <div className="m">{m}</div>
     </div>
   );
 }

@@ -7,7 +7,7 @@ export default function LoginForm({ from }: { from?: string }) {
   const [state, formAction, pending] = useActionState(loginAction, {});
 
   return (
-    <form action={formAction} className="space-y-1">
+    <form action={formAction} className="stack">
       <input type="hidden" name="from" value={from || "/"} />
       <label className="f">
         <span>Email</span>
@@ -17,12 +17,8 @@ export default function LoginForm({ from }: { from?: string }) {
         <span>Password</span>
         <input className="inp" type="password" name="password" required autoComplete="current-password" />
       </label>
-      {state?.error && (
-        <div className="note bad" style={{ marginBottom: 12 }}>
-          {state.error}
-        </div>
-      )}
-      <button className="btn pri" type="submit" disabled={pending} style={{ width: "100%", justifyContent: "center", marginTop: 6 }}>
+      {state?.error && <div className="note bad">{state.error}</div>}
+      <button className="btn pri" type="submit" disabled={pending} style={{ width: "100%", justifyContent: "center" }}>
         {pending ? "Signing in…" : "Sign in"}
       </button>
     </form>

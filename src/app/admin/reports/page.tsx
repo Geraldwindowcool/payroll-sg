@@ -40,12 +40,13 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
   return (
     <AppShell active="/admin/reports">
-      <div className="flex items-center justify-between flex-wrap gap-3" style={{ marginBottom: 16 }}>
+      <div className="page-head">
         <div>
-          <h1 style={{ fontSize: 26 }}>Reports</h1>
-          <span className="hint">{company.name} — {year} yearly summary.</span>
+          <div className="eyebrow">{company.name}</div>
+          <h1>Reports</h1>
+          <div className="sub">{year} yearly summary.</div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="actions">
           <form method="get" className="flex items-center gap-2">
             <input className="inp" type="number" name="year" defaultValue={year} style={{ width: 100 }} />
             <button className="btn sm" type="submit">Go</button>
@@ -54,45 +55,49 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="hd"><h2 style={{ fontSize: 16 }}>By month</h2></div>
-        <div className="tw">
-          <table>
-            <thead><tr><th>Month</th><th className="n">Gross</th><th className="n">Net</th><th className="n">Cost to company</th></tr></thead>
-            <tbody>
-              {monthlyTotals.map((m) => (
-                <tr key={m.ym}><td>{m.ym}</td><td className="n">{money(m.gross)}</td><td className="n">{money(m.net)}</td><td className="n">{money(m.cost)}</td></tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr><td>Total {year}</td><td className="n">{money(yearTotal.gross)}</td><td className="n">{money(yearTotal.net)}</td><td className="n">{money(yearTotal.cost)}</td></tr>
-            </tfoot>
-          </table>
+      <div className="stack-lg">
+        <div className="card">
+          <div className="hd"><h2>By month</h2></div>
+          <div className="tw">
+            <table>
+              <thead><tr><th>Month</th><th className="n">Gross</th><th className="n">Net</th><th className="n">Cost to company</th></tr></thead>
+              <tbody>
+                {monthlyTotals.map((m) => (
+                  <tr key={m.ym}><td>{m.ym}</td><td className="n">{money(m.gross)}</td><td className="n">{money(m.net)}</td><td className="n">{money(m.cost)}</td></tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr><td>Total {year}</td><td className="n">{money(yearTotal.gross)}</td><td className="n">{money(yearTotal.net)}</td><td className="n">{money(yearTotal.cost)}</td></tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
-      </div>
 
-      <div className="card">
-        <div className="hd"><h2 style={{ fontSize: 16 }}>By employee — {year} to date</h2></div>
-        <div className="tw">
-          <table>
-            <thead><tr><th>Employee</th><th className="n">Gross YTD</th><th className="n">Net YTD</th><th className="n">Cost YTD</th><th className="n">MC taken</th><th className="n">Leave taken</th></tr></thead>
-            <tbody>
-              {employees.map((e) => {
-                const agg = perEmployee.get(e.id) ?? { name: e.name, gross: 0, net: 0, cost: 0, cpfEr: 0, sdl: 0 };
-                const used = leaveUsage.get(e.id) ?? { mc: 0, pl: 0, ul: 0 };
-                return (
-                  <tr key={e.id}>
-                    <td>{e.name}</td>
-                    <td className="n">{money(agg.gross)}</td>
-                    <td className="n">{money(agg.net)}</td>
-                    <td className="n">{money(agg.cost)}</td>
-                    <td className="n">{used.mc} / {e.mcEntitlement}</td>
-                    <td className="n">{used.pl} / {e.alEntitlement}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="card">
+          <div className="hd"><h2>By employee — {year} to date</h2></div>
+          <div className="tw">
+            <table>
+              <thead><tr><th>Employee</th><th className="n">Gross YTD</th><th className="n">Net YTD</th><th className="n">Cost YTD</th><th className="n">MC taken</th><th className="n">Leave taken</th></tr></thead>
+              <tbody>
+                {employees.length ? employees.map((e) => {
+                  const agg = perEmployee.get(e.id) ?? { name: e.name, gross: 0, net: 0, cost: 0, cpfEr: 0, sdl: 0 };
+                  const used = leaveUsage.get(e.id) ?? { mc: 0, pl: 0, ul: 0 };
+                  return (
+                    <tr key={e.id}>
+                      <td>{e.name}</td>
+                      <td className="n">{money(agg.gross)}</td>
+                      <td className="n">{money(agg.net)}</td>
+                      <td className="n">{money(agg.cost)}</td>
+                      <td className="n">{used.mc} / {e.mcEntitlement}</td>
+                      <td className="n">{used.pl} / {e.alEntitlement}</td>
+                    </tr>
+                  );
+                }) : (
+                  <tr><td colSpan={6} className="empty">No employees yet.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </AppShell>

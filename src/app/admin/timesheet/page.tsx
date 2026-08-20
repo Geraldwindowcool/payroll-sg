@@ -53,42 +53,52 @@ export default async function AdminTimesheetPage({ searchParams }: { searchParam
 
   return (
     <AppShell active="/admin/timesheet">
-      <div style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 26 }}>Timesheet</h1>
-        <span className="hint">{company.name} — every field, week by week. Staff can only edit MC/leave from their own screen.</span>
+      <div className="page-head">
+        <div>
+          <div className="eyebrow">{company.name}</div>
+          <h1>Timesheet</h1>
+          <div className="sub">Every field, week by week. Staff can only edit MC/leave from their own screen.</div>
+        </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="bd">
-          <form method="get" className="flex items-center gap-3 flex-wrap" style={{ marginBottom: 16 }}>
-            <label className="f" style={{ marginBottom: 0 }}><span>Month</span><input className="inp" type="month" name="ym" defaultValue={ym} style={{ width: 160 }} /></label>
-            <div className="flex gap-1 flex-wrap" role="group" aria-label="Week" style={{ marginTop: 18 }}>
-              {weeks.map((w) => (
-                <a key={w.i} href={`/admin/timesheet?ym=${ym}&w=${w.i}`} className="btn sm" style={w.i === weekIndex ? { background: "var(--ink)", color: "#fff", borderColor: "var(--ink)" } : {}} title={w.range}>{w.label}</a>
-              ))}
-            </div>
-          </form>
+      <div className="stack-lg">
+        <div className="card">
+          <div className="bd">
+            <form method="get" className="flex items-end gap-4 flex-wrap">
+              <label className="f" style={{ maxWidth: 170 }}><span>Month</span><input className="inp" type="month" name="ym" defaultValue={ym} /></label>
+              <div>
+                <div className="hint" style={{ marginBottom: 6 }}>Week</div>
+                <div className="weekrow" role="group" aria-label="Week">
+                  {weeks.map((w) => (
+                    <a key={w.i} href={`/admin/timesheet?ym=${ym}&w=${w.i}`} className={w.i === weekIndex ? "on" : ""} title={w.range}>{w.label}</a>
+                  ))}
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
 
-          {!rows.length ? (
-            <div className="hint">No active employees yet.</div>
-          ) : (
-            <form action={saveTimesheetWeekAction}>
-              <input type="hidden" name="companyId" value={company.id} />
-              <input type="hidden" name="ym" value={ym} />
-              <input type="hidden" name="weekIndex" value={weekIndex} />
-              <input type="hidden" name="employeeIds" value={rows.map((r) => r.emp.id).join(",")} />
-              <input type="hidden" name="allowanceIds" value={allowanceIds.join(",")} />
+        {!rows.length ? (
+          <div className="card"><div className="empty">No active employees yet.</div></div>
+        ) : (
+          <form action={saveTimesheetWeekAction} className="stack">
+            <input type="hidden" name="companyId" value={company.id} />
+            <input type="hidden" name="ym" value={ym} />
+            <input type="hidden" name="weekIndex" value={weekIndex} />
+            <input type="hidden" name="employeeIds" value={rows.map((r) => r.emp.id).join(",")} />
+            <input type="hidden" name="allowanceIds" value={allowanceIds.join(",")} />
 
+            <div className="stack">
               {rows.map(({ emp, ts, calc, empAllowances }) => {
                 const linkedAllowances = allowances.filter((a) => empAllowances.some((l) => l.allowanceId === a.id));
                 return (
-                  <div key={emp.id} className="card" style={{ marginBottom: 12 }}>
+                  <div key={emp.id} className="card">
+                    <div className="hd">
+                      <h2 style={{ fontSize: 14 }}>{emp.name}</h2>
+                      <span className="hint">{n2(calc.days)} / {n2(calc.stdWeek)} days this week{calc.leaveOver ? " · leave exceeds week" : ""}</span>
+                    </div>
                     <div className="bd">
-                      <div className="flex items-center gap-3 flex-wrap" style={{ marginBottom: 10 }}>
-                        <div className="strong">{emp.name}</div>
-                        <span className="hint">{n2(calc.days)} / {n2(calc.stdWeek)} days this week{calc.leaveOver ? " · leave exceeds week" : ""}</span>
-                      </div>
-                      <div className="grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 10 }}>
+                      <div className="fields tight">
                         <label className="f"><span>Days override</span><input className="inp num" type="number" step="0.5" name={`days_${emp.id}`} defaultValue={ts.days ?? ""} placeholder="auto" /></label>
                         <label className="f"><span>OT hrs</span><input className="inp num" type="number" step="0.5" min="0" name={`ot_${emp.id}`} defaultValue={ts.ot || ""} /></label>
                         <label className="f"><span>Extra OT hrs</span><input className="inp num" type="number" step="0.5" min="0" name={`xot_${emp.id}`} defaultValue={ts.xot || ""} /></label>
@@ -106,51 +116,58 @@ export default async function AdminTimesheetPage({ searchParams }: { searchParam
                   </div>
                 );
               })}
+            </div>
+            <div>
               <button className="btn pri" type="submit">Save {wk.label}</button>
-            </form>
-          )}
-        </div>
-      </div>
+            </div>
+          </form>
+        )}
 
-      {rows.length > 0 && (
-        <div className="card">
-          <div className="hd"><h2 style={{ fontSize: 16 }}>Monthly items — {ym}</h2><span className="hint">Bonus, one-off adjustments, reimbursements and deductions — apply once for the whole month, not per week.</span></div>
-          <div className="bd">
-            <form action={saveMonthlyItemsAction}>
-              <input type="hidden" name="companyId" value={company.id} />
-              <input type="hidden" name="ym" value={ym} />
-              <input type="hidden" name="employeeIds" value={rows.map((r) => r.emp.id).join(",")} />
-              <div className="tw">
-                <table>
-                  <thead>
-                    <tr><th>Employee</th><th className="n">13th month / bonus</th><th className="n">Adjustment</th><th>Label</th><th className="n">Reimbursement</th><th>Label</th><th className="n">Deduction</th><th>Label</th><th>Note</th><th>Paid</th></tr>
-                  </thead>
-                  <tbody>
-                    {rows.map(({ emp }) => {
-                      const item = itemsByEmp.get(emp.id) ?? { bonus: 0, adj: 0, adjLbl: "", reimb: 0, reimbLbl: "", ded: 0, dedLbl: "", note: "", paid: false };
-                      return (
-                        <tr key={emp.id}>
-                          <td className="strong">{emp.name}</td>
-                          <td className="n"><input className="inp num" type="number" step="0.01" name={`bonus_${emp.id}`} defaultValue={item.bonus || ""} style={{ width: 100 }} /></td>
-                          <td className="n"><input className="inp num" type="number" step="0.01" name={`adj_${emp.id}`} defaultValue={item.adj || ""} style={{ width: 90 }} /></td>
-                          <td><input className="inp" name={`adjLbl_${emp.id}`} defaultValue={item.adjLbl} style={{ width: 110 }} /></td>
-                          <td className="n"><input className="inp num" type="number" step="0.01" name={`reimb_${emp.id}`} defaultValue={item.reimb || ""} style={{ width: 90 }} /></td>
-                          <td><input className="inp" name={`reimbLbl_${emp.id}`} defaultValue={item.reimbLbl} style={{ width: 110 }} /></td>
-                          <td className="n"><input className="inp num" type="number" step="0.01" name={`ded_${emp.id}`} defaultValue={item.ded || ""} style={{ width: 90 }} /></td>
-                          <td><input className="inp" name={`dedLbl_${emp.id}`} defaultValue={item.dedLbl} style={{ width: 110 }} /></td>
-                          <td><input className="inp" name={`note_${emp.id}`} defaultValue={item.note} style={{ width: 130 }} /></td>
-                          <td><input type="checkbox" name={`paid_${emp.id}`} defaultChecked={item.paid} /></td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <button className="btn pri" type="submit" style={{ marginTop: 12 }}>Save monthly items</button>
-            </form>
+        {rows.length > 0 && (
+          <div className="card">
+            <div className="hd">
+              <h2>Monthly items — {ym}</h2>
+              <span className="hint">Bonus, one-off adjustments, reimbursements and deductions — apply once for the whole month, not per week.</span>
+            </div>
+            <div className="bd">
+              <form action={saveMonthlyItemsAction} className="stack">
+                <input type="hidden" name="companyId" value={company.id} />
+                <input type="hidden" name="ym" value={ym} />
+                <input type="hidden" name="employeeIds" value={rows.map((r) => r.emp.id).join(",")} />
+                <div className="tw">
+                  <table>
+                    <thead>
+                      <tr><th>Employee</th><th className="n">13th month / bonus</th><th className="n">Adjustment</th><th>Label</th><th className="n">Reimbursement</th><th>Label</th><th className="n">Deduction</th><th>Label</th><th>Note</th><th>Paid</th></tr>
+                    </thead>
+                    <tbody>
+                      {rows.map(({ emp }) => {
+                        const item = itemsByEmp.get(emp.id) ?? { bonus: 0, adj: 0, adjLbl: "", reimb: 0, reimbLbl: "", ded: 0, dedLbl: "", note: "", paid: false };
+                        return (
+                          <tr key={emp.id}>
+                            <td className="strong">{emp.name}</td>
+                            <td className="n"><input className="inp num" type="number" step="0.01" name={`bonus_${emp.id}`} defaultValue={item.bonus || ""} style={{ width: 100 }} /></td>
+                            <td className="n"><input className="inp num" type="number" step="0.01" name={`adj_${emp.id}`} defaultValue={item.adj || ""} style={{ width: 90 }} /></td>
+                            <td><input className="inp" name={`adjLbl_${emp.id}`} defaultValue={item.adjLbl} style={{ width: 110 }} /></td>
+                            <td className="n"><input className="inp num" type="number" step="0.01" name={`reimb_${emp.id}`} defaultValue={item.reimb || ""} style={{ width: 90 }} /></td>
+                            <td><input className="inp" name={`reimbLbl_${emp.id}`} defaultValue={item.reimbLbl} style={{ width: 110 }} /></td>
+                            <td className="n"><input className="inp num" type="number" step="0.01" name={`ded_${emp.id}`} defaultValue={item.ded || ""} style={{ width: 90 }} /></td>
+                            <td><input className="inp" name={`dedLbl_${emp.id}`} defaultValue={item.dedLbl} style={{ width: 110 }} /></td>
+                            <td><input className="inp" name={`note_${emp.id}`} defaultValue={item.note} style={{ width: 130 }} /></td>
+                            <td><input type="checkbox" name={`paid_${emp.id}`} defaultChecked={item.paid} /></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div>
+                  <button className="btn pri" type="submit">Save monthly items</button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </AppShell>
   );
 }

@@ -47,37 +47,44 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
 
   return (
     <AppShell>
-      <div className="card">
-        <div className="hd">
-          <h2 style={{ fontSize: 18 }}>MC &amp; leave — {company.name}</h2>
-          <span className="hint">Key in medical, paid and unpaid leave. This never touches overtime, allowances or pay rates.</span>
+      <div className="page-head">
+        <div>
+          <div className="eyebrow">{company.name}</div>
+          <h1>MC &amp; leave</h1>
+          <div className="sub">Key in medical, paid and unpaid leave. This never touches overtime, allowances or pay rates.</div>
         </div>
-        <div className="bd">
-          <form method="get" className="flex items-center gap-3 flex-wrap" style={{ marginBottom: 16 }}>
-            <label className="f" style={{ marginBottom: 0 }}>
+      </div>
+
+      <div className="card">
+        <div className="bd stack">
+          <form method="get" className="flex items-end gap-4 flex-wrap">
+            <label className="f" style={{ maxWidth: 170 }}>
               <span>Month</span>
-              <input className="inp" type="month" name="ym" defaultValue={ym} style={{ width: 160 }} />
+              <input className="inp" type="month" name="ym" defaultValue={ym} />
             </label>
-            <div className="flex gap-1 flex-wrap" role="group" aria-label="Week" style={{ marginTop: 18 }}>
-              {weeks.map((w) => (
-                <a key={w.i} href={`/leave?ym=${ym}&w=${w.i}`} className="btn sm" style={w.i === weekIndex ? { background: "var(--ink)", color: "#fff", borderColor: "var(--ink)" } : {}} title={w.range}>
-                  {w.label}
-                </a>
-              ))}
+            <div>
+              <div className="hint" style={{ marginBottom: 6 }}>Week</div>
+              <div className="weekrow" role="group" aria-label="Week">
+                {weeks.map((w) => (
+                  <a key={w.i} href={`/leave?ym=${ym}&w=${w.i}`} className={w.i === weekIndex ? "on" : ""} title={w.range}>
+                    {w.label}
+                  </a>
+                ))}
+              </div>
             </div>
             <noscript>
-              <button className="btn sm" type="submit" style={{ marginTop: 18 }}>Go</button>
+              <button className="btn sm" type="submit">Go</button>
             </noscript>
           </form>
 
-          <div className="note info" style={{ marginBottom: 14 }}>
+          <div className="note info">
             Showing <b>{wk.range}</b>. MC and paid leave don&apos;t change anyone&apos;s pay — they&apos;re recorded for the record. Unpaid leave automatically reduces that week&apos;s pay.
           </div>
 
           {!rows.length ? (
-            <div className="hint">No active employees yet.</div>
+            <div className="empty">No active employees yet.</div>
           ) : (
-            <form action={saveLeaveAction}>
+            <form action={saveLeaveAction} className="stack">
               <input type="hidden" name="companyId" value={company.id} />
               <input type="hidden" name="ym" value={ym} />
               <input type="hidden" name="weekIndex" value={weekIndex} />
@@ -117,9 +124,11 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
                   </tbody>
                 </table>
               </div>
-              <button className="btn pri" type="submit" style={{ marginTop: 14 }}>
-                Save leave for {wk.label}
-              </button>
+              <div>
+                <button className="btn pri" type="submit">
+                  Save leave for {wk.label}
+                </button>
+              </div>
             </form>
           )}
         </div>

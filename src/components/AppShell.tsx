@@ -26,15 +26,15 @@ export default async function AppShell({ children, active }: { children: React.R
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b" style={{ borderColor: "var(--line)", background: "var(--surface)" }}>
-        <div className="container flex items-center gap-4 flex-wrap" style={{ padding: "10px 20px" }}>
-          <Link href={isAdmin ? "/admin" : "/leave"} className="flex items-center gap-2" style={{ textDecoration: "none" }}>
-            <div className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-semibold" style={{ background: "var(--ink)", color: "#fff" }}>
+      <header style={{ position: "sticky", top: 0, zIndex: 20, borderBottom: "1px solid var(--line)", background: "rgba(255,255,255,0.92)", backdropFilter: "blur(6px)" }}>
+        <div className="container flex items-center gap-4 flex-wrap" style={{ paddingTop: 12, paddingBottom: 12 }}>
+          <Link href={isAdmin ? "/admin" : "/leave"} className="flex items-center gap-3" style={{ textDecoration: "none" }}>
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold" style={{ background: "var(--ink)", color: "#fff", boxShadow: "var(--shadow-sm)" }}>
               PS
             </div>
             <div>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--ink)", lineHeight: 1.1 }}>Payroll SG</div>
-              <div className="hint" style={{ fontSize: 10.5, letterSpacing: "0.04em" }}>SINGAPORE PAYROLL</div>
+              <div style={{ fontFamily: "var(--font-serif)", fontSize: 17, color: "var(--ink)", lineHeight: 1.15 }}>Payroll SG</div>
+              <div className="hint" style={{ fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" }}>Singapore payroll</div>
             </div>
           </Link>
 
@@ -44,7 +44,7 @@ export default async function AppShell({ children, active }: { children: React.R
 
           {user && (
             <div className="flex items-center gap-3">
-              <div className="text-right" style={{ lineHeight: 1.2 }}>
+              <div className="text-right" style={{ lineHeight: 1.3 }}>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{user.name}</div>
                 <span className={`pill ${isAdmin ? "blue" : "gray"}`}>{isAdmin ? "Administrator" : "Staff"}</span>
               </div>
@@ -65,7 +65,7 @@ export default async function AppShell({ children, active }: { children: React.R
         )}
       </header>
       <main className="flex-1">
-        <div className="container" style={{ padding: "24px 20px" }}>
+        <div className="container" style={{ paddingTop: "var(--sp-6)", paddingBottom: "var(--sp-8)" }}>
           {children}
         </div>
       </main>
