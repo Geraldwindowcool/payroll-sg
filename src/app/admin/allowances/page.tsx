@@ -3,8 +3,6 @@ import { getActiveCompany } from "@/lib/activeCompany";
 import { getAllowances } from "@/lib/payrollService";
 import { createAllowanceAction, updateAllowanceAction, deleteAllowanceAction } from "@/app/actions/allowances";
 
-const ROW_COLS = "minmax(140px,2fr) minmax(110px,1fr) minmax(90px,1fr) auto auto auto";
-
 export default async function AllowancesPage() {
   const company = await getActiveCompany();
   if (!company) {
@@ -29,30 +27,30 @@ export default async function AllowancesPage() {
       <div className="stack-lg">
         <div className="card">
           <div className="bd">
-            {allowances.length > 0 && (
-              <div className="hint" style={{ display: "grid", gridTemplateColumns: ROW_COLS, gap: 10, paddingBottom: 8, marginBottom: 4, borderBottom: "1px solid var(--line)" }}>
-                <span>Name</span>
-                <span>Basis</span>
-                <span>Rate ($)</span>
-                <span style={{ gridColumn: "span 3" }}>CPF-payable</span>
-              </div>
-            )}
-            {allowances.map((a) => (
-              <form key={a.id} action={updateAllowanceAction} className="items-center" style={{ display: "grid", gridTemplateColumns: ROW_COLS, gap: 10, padding: "10px 0", borderBottom: "1px solid var(--line)" }}>
-                <input type="hidden" name="id" value={a.id} />
-                <input className="inp" name="name" defaultValue={a.name} />
-                <select className="inp" name="basis" defaultValue={a.basis}>
-                  <option value="DAY">Per day</option>
-                  <option value="HOUR">Per hour</option>
-                  <option value="FIXED">Fixed / month</option>
-                </select>
-                <input className="inp num" type="number" step="0.01" name="rate" defaultValue={a.rate} />
-                <label className="chk"><input type="checkbox" name="cpfPayable" defaultChecked={a.cpfPayable} /></label>
-                <button className="btn sm" type="submit">Save</button>
-                <button className="btn sm danger" type="submit" formAction={deleteAllowanceAction}>Delete</button>
-              </form>
-            ))}
-            {!allowances.length && <div className="empty">No allowances yet — add one below.</div>}
+            <div className="stack">
+              {allowances.map((a) => (
+                <form key={a.id} action={updateAllowanceAction} className="stack" style={{ paddingBottom: "var(--sp-4)", borderBottom: "1px solid var(--line)" }}>
+                  <input type="hidden" name="id" value={a.id} />
+                  <div className="fields tight">
+                    <label className="f"><span>Name</span><input className="inp" name="name" defaultValue={a.name} /></label>
+                    <label className="f"><span>Basis</span>
+                      <select className="inp" name="basis" defaultValue={a.basis}>
+                        <option value="DAY">Per day</option>
+                        <option value="HOUR">Per hour</option>
+                        <option value="FIXED">Fixed / month</option>
+                      </select>
+                    </label>
+                    <label className="f"><span>Rate ($)</span><input className="inp num" type="number" step="0.01" name="rate" defaultValue={a.rate} /></label>
+                    <label className="chk" style={{ alignSelf: "end", height: 38 }}><input type="checkbox" name="cpfPayable" defaultChecked={a.cpfPayable} /> CPF-payable</label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button className="btn sm" type="submit">Save</button>
+                    <button className="btn sm danger" type="submit" formAction={deleteAllowanceAction}>Delete</button>
+                  </div>
+                </form>
+              ))}
+              {!allowances.length && <div className="empty">No allowances yet — add one below.</div>}
+            </div>
           </div>
         </div>
 
