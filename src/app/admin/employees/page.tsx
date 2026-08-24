@@ -5,6 +5,15 @@ import { getEmployees, getLeaveUsageForYear } from "@/lib/payrollService";
 import { createEmployeeAction } from "@/app/actions/employees";
 import { money } from "@/lib/payroll";
 
+// NRIC/FIN is sensitive personal data — show only the last 4 characters in
+// list views (good PDPA practice); the full number is still visible/editable
+// on the employee's own detail page where it's actually needed.
+function maskNric(nric: string) {
+  if (!nric) return "—";
+  if (nric.length <= 4) return nric;
+  return `${"•".repeat(nric.length - 4)}${nric.slice(-4)}`;
+}
+
 export default async function EmployeesPage() {
   const company = await getActiveCompany();
   if (!company) {
@@ -41,6 +50,7 @@ export default async function EmployeesPage() {
                 <div className="fields">
                   <label className="f"><span>Name</span><input className="inp" name="name" required /></label>
                   <label className="f"><span>Employee no.</span><input className="inp" name="empNo" /></label>
+                  <label className="f"><span>NRIC / FIN</span><input className="inp" name="nric" placeholder="S1234567A" maxLength={9} style={{ textTransform: "uppercase" }} /></label>
                   <label className="f"><span>Date of birth</span><input className="inp" type="date" name="dob" /></label>
                   <label className="f"><span>Email</span><input className="inp" type="email" name="email" /></label>
                 </div>
@@ -105,6 +115,7 @@ export default async function EmployeesPage() {
               <thead>
                 <tr>
                   <th>Employee</th>
+                  <th>NRIC / FIN</th>
                   <th>Residency</th>
                   <th className="n">Salary</th>
                   <th className="n">MC used / entitled ({year})</th>
@@ -122,6 +133,7 @@ export default async function EmployeesPage() {
                         <div className="strong">{e.name}</div>
                         <div className="hint">{e.empNo}</div>
                       </td>
+                      <td className="hint">{maskNric(e.nric)}</td>
                       <td>{e.res}</td>
                       <td className="n">{money(e.salary)}</td>
                       <td className="n">{u.mc} / {e.mcEntitlement}</td>
@@ -132,7 +144,7 @@ export default async function EmployeesPage() {
                   );
                 })}
                 {!employees.length && (
-                  <tr><td colSpan={7} className="empty">No employees yet — add one above.</td></tr>
+                  <tr><td colSpan={8} className="empty">No employees yet — add one above.</td></tr>
                 )}
               </tbody>
             </table>

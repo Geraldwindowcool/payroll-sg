@@ -119,6 +119,7 @@ export const employees = pgTable(
     companyId: fk("company_id"),
     name: text("name").notNull(),
     empNo: text("emp_no").notNull().default(""),
+    nric: text("nric").notNull().default(""), // NRIC (citizens/PRs) or FIN (work pass holders)
     dob: text("dob").notNull().default(""), // ISO date string
     res: residencyEnum("res").notNull().default("FW"),
     prDate: text("pr_date").notNull().default(""),

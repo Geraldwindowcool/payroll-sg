@@ -29,6 +29,7 @@ function employeeFields(formData: FormData) {
   return {
     name: s(formData, "name"),
     empNo: s(formData, "empNo"),
+    nric: s(formData, "nric").toUpperCase(),
     dob: s(formData, "dob"),
     res: (s(formData, "res") || "FW") as "SC" | "PR" | "FW",
     prDate: s(formData, "prDate"),

@@ -36,6 +36,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
                 <div className="fields">
                   <label className="f"><span>Name</span><input className="inp" name="name" defaultValue={emp.name} required /></label>
                   <label className="f"><span>Employee no.</span><input className="inp" name="empNo" defaultValue={emp.empNo} /></label>
+                  <label className="f"><span>NRIC / FIN</span><input className="inp" name="nric" defaultValue={emp.nric} placeholder="S1234567A" maxLength={9} style={{ textTransform: "uppercase" }} /></label>
                   <label className="f"><span>Date of birth</span><input className="inp" type="date" name="dob" defaultValue={emp.dob} /></label>
                   <label className="f"><span>Email</span><input className="inp" type="email" name="email" defaultValue={emp.email} /></label>
                 </div>
