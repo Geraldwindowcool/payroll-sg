@@ -121,6 +121,8 @@ export const employees = pgTable(
     empNo: text("emp_no").notNull().default(""),
     nric: text("nric").notNull().default(""), // NRIC (citizens/PRs) or FIN (work pass holders)
     dob: text("dob").notNull().default(""), // ISO date string
+    title: text("title").notNull().default(""), // job title / role
+    joinDate: text("join_date").notNull().default(""), // ISO date string
     res: residencyEnum("res").notNull().default("FW"),
     prDate: text("pr_date").notNull().default(""),
     salary: numeric("salary", { mode: "number", precision: 10, scale: 2 }).notNull().default(0),
@@ -141,6 +143,11 @@ export const employees = pgTable(
     // entitlement). Days per calendar year; editable per employee.
     alEntitlement: numeric("al_entitlement", { mode: "number", precision: 5, scale: 1 }).notNull().default(14),
     mcEntitlement: numeric("mc_entitlement", { mode: "number", precision: 5, scale: 1 }).notNull().default(14),
+    // Free-text history/context (salary-change notes, resignation dates,
+    // account numbers, anything worth keeping that doesn't fit a field of
+    // its own) — carried over from whatever paper trail an employer already
+    // keeps, so migrating into this app doesn't mean losing that context.
+    notes: text("notes").notNull().default(""),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

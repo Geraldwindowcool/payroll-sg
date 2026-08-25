@@ -38,6 +38,8 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
                   <label className="f"><span>Employee no.</span><input className="inp" name="empNo" defaultValue={emp.empNo} /></label>
                   <label className="f"><span>NRIC / FIN</span><input className="inp" name="nric" defaultValue={emp.nric} placeholder="S1234567A" maxLength={9} style={{ textTransform: "uppercase" }} /></label>
                   <label className="f"><span>Date of birth</span><input className="inp" type="date" name="dob" defaultValue={emp.dob} /></label>
+                  <label className="f"><span>Job title</span><input className="inp" name="title" defaultValue={emp.title} /></label>
+                  <label className="f"><span>Join date</span><input className="inp" type="date" name="joinDate" defaultValue={emp.joinDate} /></label>
                   <label className="f"><span>Email</span><input className="inp" type="email" name="email" defaultValue={emp.email} /></label>
                 </div>
               </div>
@@ -92,6 +94,13 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
                   <label className="f"><span>Annual leave entitlement (days/yr)</span><input className="inp num" type="number" step="0.5" name="alEntitlement" defaultValue={emp.alEntitlement} /></label>
                   <label className="f"><span>MC entitlement (days/yr)</span><input className="inp num" type="number" step="0.5" name="mcEntitlement" defaultValue={emp.mcEntitlement} /></label>
                   <label className="f"><span>CDAC amount ($/mth)</span><input className="inp num" type="number" step="0.01" name="cdacAmt" defaultValue={emp.cdacAmt ?? ""} placeholder="0" /></label>
+                </div>
+              </div>
+
+              <div className="fgroup">
+                <div className="cap">Notes</div>
+                <div className="fields">
+                  <label className="f" style={{ gridColumn: "1 / -1" }}><span>Notes / history</span><textarea className="inp" name="notes" rows={3} defaultValue={emp.notes} placeholder="Salary change history, resignation details, anything worth keeping a record of" /></label>
                 </div>
               </div>
 

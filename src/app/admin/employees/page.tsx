@@ -52,6 +52,8 @@ export default async function EmployeesPage() {
                   <label className="f"><span>Employee no.</span><input className="inp" name="empNo" /></label>
                   <label className="f"><span>NRIC / FIN</span><input className="inp" name="nric" placeholder="S1234567A" maxLength={9} style={{ textTransform: "uppercase" }} /></label>
                   <label className="f"><span>Date of birth</span><input className="inp" type="date" name="dob" /></label>
+                  <label className="f"><span>Job title</span><input className="inp" name="title" /></label>
+                  <label className="f"><span>Join date</span><input className="inp" type="date" name="joinDate" /></label>
                   <label className="f"><span>Email</span><input className="inp" type="email" name="email" /></label>
                 </div>
               </div>
@@ -102,6 +104,13 @@ export default async function EmployeesPage() {
                 </div>
               </div>
 
+              <div className="fgroup">
+                <div className="cap">Notes</div>
+                <div className="fields">
+                  <label className="f" style={{ gridColumn: "1 / -1" }}><span>Notes / history</span><textarea className="inp" name="notes" rows={3} placeholder="Salary change history, resignation details, anything worth keeping a record of" /></label>
+                </div>
+              </div>
+
               <div>
                 <button className="btn pri" type="submit">Add employee</button>
               </div>
@@ -131,7 +140,7 @@ export default async function EmployeesPage() {
                     <tr key={e.id}>
                       <td>
                         <div className="strong">{e.name}</div>
-                        <div className="hint">{e.empNo}</div>
+                        <div className="hint">{[e.empNo, e.title].filter(Boolean).join(" · ")}</div>
                       </td>
                       <td className="hint">{maskNric(e.nric)}</td>
                       <td>{e.res}</td>

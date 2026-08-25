@@ -31,6 +31,8 @@ function employeeFields(formData: FormData) {
     empNo: s(formData, "empNo"),
     nric: s(formData, "nric").toUpperCase(),
     dob: s(formData, "dob"),
+    title: s(formData, "title"),
+    joinDate: s(formData, "joinDate"),
     res: (s(formData, "res") || "FW") as "SC" | "PR" | "FW",
     prDate: s(formData, "prDate"),
     salary: num(formData, "salary"),
@@ -47,6 +49,7 @@ function employeeFields(formData: FormData) {
     cdacAmt: numOrNull(formData, "cdacAmt"),
     alEntitlement: num(formData, "alEntitlement", 14),
     mcEntitlement: num(formData, "mcEntitlement", 14),
+    notes: s(formData, "notes"),
   };
 }
 
