@@ -186,31 +186,22 @@ export async function getMonthlyItemsForCompanyMonth(companyId: string, ym: stri
   return out;
 }
 
-/** CPF-subject OW/AW already accrued this calendar year, before the given month. */
-export async function ytdBefore(
+type YtdTsRow = typeof timesheetWeeks.$inferSelect;
+type YtdMoRow = typeof monthlyItems.$inferSelect;
+
+/** Pure CPF-subject OW/AW accrual math for one employee, given the raw
+ *  timesheet/monthly-item rows already filtered to that employee and to
+ *  "yearStart <= ym < beforeThis". Split out of ytdBefore() so the batch
+ *  path (getMonthPayroll) can fetch rows for the whole company once and
+ *  reuse this same math per employee, instead of one DB round trip each. */
+function ytdFromRows(
   company: CompanyConfig,
   emp: EmployeeCalc,
-  ym: string,
   allowanceDefs: AllowanceDef[],
-  empAllowances: EmployeeAllowanceLink[]
-): Promise<{ ow: number; aw: number }> {
-  const [y, m] = ym.split("-").map(Number);
-  if (m <= 1) return { ow: 0, aw: 0 };
-
-  const yearStart = `${y}-01`;
-  const beforeThis = `${y}-${String(m).padStart(2, "0")}`;
-
-  const [tsRows, moRows] = await Promise.all([
-    db
-      .select()
-      .from(timesheetWeeks)
-      .where(and(eq(timesheetWeeks.employeeId, emp.id), gte(timesheetWeeks.ym, yearStart), lt(timesheetWeeks.ym, beforeThis))),
-    db
-      .select()
-      .from(monthlyItems)
-      .where(and(eq(monthlyItems.employeeId, emp.id), gte(monthlyItems.ym, yearStart), lt(monthlyItems.ym, beforeThis))),
-  ]);
-
+  empAllowances: EmployeeAllowanceLink[],
+  tsRows: YtdTsRow[],
+  moRows: YtdMoRow[]
+): { ow: number; aw: number } {
   if (!tsRows.length && !moRows.length) return { ow: 0, aw: 0 };
 
   const months = new Set([...tsRows.map((r) => r.ym), ...moRows.map((r) => r.ym)]);
@@ -246,6 +237,58 @@ export async function ytdBefore(
   return { ow, aw };
 }
 
+/** CPF-subject OW/AW already accrued this calendar year, before the given month. */
+export async function ytdBefore(
+  company: CompanyConfig,
+  emp: EmployeeCalc,
+  ym: string,
+  allowanceDefs: AllowanceDef[],
+  empAllowances: EmployeeAllowanceLink[]
+): Promise<{ ow: number; aw: number }> {
+  const [y, m] = ym.split("-").map(Number);
+  if (m <= 1) return { ow: 0, aw: 0 };
+
+  const yearStart = `${y}-01`;
+  const beforeThis = `${y}-${String(m).padStart(2, "0")}`;
+
+  const [tsRows, moRows] = await Promise.all([
+    db
+      .select()
+      .from(timesheetWeeks)
+      .where(and(eq(timesheetWeeks.employeeId, emp.id), gte(timesheetWeeks.ym, yearStart), lt(timesheetWeeks.ym, beforeThis))),
+    db
+      .select()
+      .from(monthlyItems)
+      .where(and(eq(monthlyItems.employeeId, emp.id), gte(monthlyItems.ym, yearStart), lt(monthlyItems.ym, beforeThis))),
+  ]);
+
+  return ytdFromRows(company, emp, allowanceDefs, empAllowances, tsRows, moRows);
+}
+
+/** Same "year to date before this month" rows ytdBefore() fetches, but for
+ *  every employee of a company in one pair of queries instead of one pair
+ *  per employee — the query already hits the (companyId, ym) index used
+ *  elsewhere, it's just scoped to the company rather than one employee. */
+async function getYtdRawForCompanyMonth(companyId: string, ym: string): Promise<{ tsRows: YtdTsRow[]; moRows: YtdMoRow[] }> {
+  const [y, m] = ym.split("-").map(Number);
+  if (m <= 1) return { tsRows: [], moRows: [] };
+
+  const yearStart = `${y}-01`;
+  const beforeThis = `${y}-${String(m).padStart(2, "0")}`;
+
+  const [tsRows, moRows] = await Promise.all([
+    db
+      .select()
+      .from(timesheetWeeks)
+      .where(and(eq(timesheetWeeks.companyId, companyId), gte(timesheetWeeks.ym, yearStart), lt(timesheetWeeks.ym, beforeThis))),
+    db
+      .select()
+      .from(monthlyItems)
+      .where(and(eq(monthlyItems.companyId, companyId), gte(monthlyItems.ym, yearStart), lt(monthlyItems.ym, beforeThis))),
+  ]);
+  return { tsRows, moRows };
+}
+
 export type MonthPayrollRow = MonthResult & { empRow: EmployeeRow };
 
 /** Full monthly payroll for every active employee of a company. This is the
@@ -261,23 +304,34 @@ export async function getMonthPayroll(companyId: string, ym: string, opts: { inc
 
   const levyById = new Map(levyRows.map((l) => [l.id, l.amt]));
   const empIds = empRows.map((e) => e.id);
-  const [linksByEmp, weeksByEmp, itemsByEmp] = await Promise.all([
+  // One pair of company-wide queries for everyone's YTD figures, instead of
+  // the old one-pair-per-employee loop below — that was the main reason
+  // this page got slower as headcount grew, since each pair was a separate
+  // network round trip to Postgres, done one employee at a time.
+  const [linksByEmp, weeksByEmp, itemsByEmp, ytdRaw] = await Promise.all([
     getEmployeeAllowanceLinks(empIds),
     getWeekTimesheetsForCompanyMonth(companyId, ym),
     getMonthlyItemsForCompanyMonth(companyId, ym),
+    getYtdRawForCompanyMonth(companyId, ym),
   ]);
 
-  const results: MonthPayrollRow[] = [];
-  for (const empRow of empRows) {
+  const results: MonthPayrollRow[] = empRows.map((empRow) => {
     const levyAmt = empRow.levyId ? levyById.get(empRow.levyId) ?? 0 : 0;
     const emp = toEmployeeCalc(empRow, levyAmt);
     const empAllowances = linksByEmp.get(empRow.id) ?? [];
     const weeks = weeksByEmp.get(empRow.id) ?? weeksOfMonth(ym).map((w) => EMPTY_WEEK(w.i));
     const monthlyItem = itemsByEmp.get(empRow.id) ?? { ...EMPTY_MONTHLY_ITEM, paid: false };
-    const ytd = await ytdBefore(company, emp, ym, allowanceDefs, empAllowances);
+    const ytd = ytdFromRows(
+      company,
+      emp,
+      allowanceDefs,
+      empAllowances,
+      ytdRaw.tsRows.filter((r) => r.employeeId === empRow.id),
+      ytdRaw.moRows.filter((r) => r.employeeId === empRow.id)
+    );
     const month = calcMonth(company, emp, ym, weeks, monthlyItem, ytd, allowanceDefs, empAllowances);
-    results.push({ ...month, empRow });
-  }
+    return { ...month, empRow };
+  });
   return results;
 }
 
