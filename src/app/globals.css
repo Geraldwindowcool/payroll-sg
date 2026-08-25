@@ -625,6 +625,89 @@ nav.tabs a.on {
   .skeleton { animation: none; }
 }
 
+/* ---------- leave calendar ---------- */
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.cal-head {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  text-align: center;
+  padding-bottom: 2px;
+}
+.cal-cell {
+  position: relative;
+  min-height: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.cal-cell:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+.cal-cell:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.cal-cell.empty-cell {
+  border: none;
+  background: none;
+  cursor: default;
+  min-height: 0;
+}
+.cal-cell.off {
+  background: var(--surface-2);
+  color: var(--ink-3);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+.cal-cell:disabled:not(.off) {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.cal-day {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.cal-tag {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+.cal-cell.on.MC { background: var(--warn-soft); border-color: var(--warn-line); }
+.cal-cell.on.MC .cal-tag { background: var(--warn); color: #fff; }
+.cal-cell.on.PL { background: var(--good-soft); border-color: var(--good-line); }
+.cal-cell.on.PL .cal-tag { background: var(--good); color: #fff; }
+.cal-cell.on.UL { background: var(--bad-soft); border-color: var(--bad-line); }
+.cal-cell.on.UL .cal-tag { background: var(--bad); color: #fff; }
+@media (max-width: 560px) {
+  .cal-cell { min-height: 44px; padding: 4px; }
+  .cal-day { font-size: 11px; }
+  .cal-tag { font-size: 8.5px; }
+}
+
 /* ---------- company switch overlay ---------- */
 .company-switch-overlay {
   position: fixed;

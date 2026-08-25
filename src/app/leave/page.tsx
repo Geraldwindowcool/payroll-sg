@@ -1,8 +1,10 @@
 import AppShell from "@/components/AppShell";
-import Link from "next/link";
+import EmployeePicker from "@/components/EmployeePicker";
+import LeaveCalendar from "@/components/LeaveCalendar";
 import { getActiveCompany } from "@/lib/activeCompany";
-import { getEmployees, getWeekTimesheetsForCompanyMonth, toCompanyConfig } from "@/lib/payrollService";
-import { calcWeek, weeksOfMonth, EMPTY_WEEK, n2 } from "@/lib/payroll";
+import { getEmployees, getLeaveDaysForEmployeeMonth, getLeaveUsageForYear } from "@/lib/payrollService";
+import { weeksOfMonth, n2 } from "@/lib/payroll";
+import { deriveWeekLeaveTotals, sumLeaveTotals } from "@/lib/leave";
 import { allowedEmployeeIds } from "@/lib/access";
 import { saveLeaveAction } from "./actions";
 
@@ -11,7 +13,10 @@ function thisMonth() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export default async function LeavePage({ searchParams }: { searchParams: Promise<{ ym?: string; w?: string }> }) {
+/** MC / leave only — the same calendar as the Attendance screen, without
+ *  the hours, overtime or allowances. For a colleague who should only ever
+ *  record who was out and when. */
+export default async function LeavePage({ searchParams }: { searchParams: Promise<{ ym?: string; emp?: string }> }) {
   const sp = await searchParams;
   const ym = sp.ym || thisMonth();
   const company = await getActiveCompany();
@@ -24,29 +29,37 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
     );
   }
 
+  const [employeesAll, allowed] = await Promise.all([getEmployees(company.id, { activeOnly: true }), allowedEmployeeIds()]);
+  const employees = (allowed ? employeesAll.filter((e) => allowed.has(e.id)) : employeesAll).sort((a, b) => a.name.localeCompare(b.name));
+
+  if (!employees.length) {
+    return (
+      <AppShell active="/leave">
+        <div className="page-head">
+          <div>
+            <div className="eyebrow">{company.name}</div>
+            <h1>MC &amp; leave</h1>
+          </div>
+        </div>
+        <div className="card">
+          <div className="empty">{allowed ? "No employees have been assigned to your login yet — ask your administrator." : "No active employees yet."}</div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const selected = employees.find((e) => e.id === sp.emp) ?? employees[0];
+  const year = Number(ym.split("-")[0]);
+
+  const [leaveEntries, yearUsage] = await Promise.all([
+    getLeaveDaysForEmployeeMonth(selected.id, ym),
+    getLeaveUsageForYear(company.id, year),
+  ]);
+
   const weeks = weeksOfMonth(ym);
-  const weekIndex = sp.w !== undefined ? Number(sp.w) : weeks[0]?.i ?? 0;
-  const wk = weeks.find((w) => w.i === weekIndex) ?? weeks[0];
-
-  const [employeesAll, weeksByEmp, allowed] = await Promise.all([getEmployees(company.id, { activeOnly: true }), getWeekTimesheetsForCompanyMonth(company.id, ym), allowedEmployeeIds()]);
-  const employees = allowed ? employeesAll.filter((e) => allowed.has(e.id)) : employeesAll;
-  const companyConfig = toCompanyConfig(company);
-
-  const rows = employees
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((e) => {
-      const weekTs = (weeksByEmp.get(e.id) ?? weeks.map((w) => EMPTY_WEEK(w.i)))[weekIndex] ?? EMPTY_WEEK(weekIndex);
-      const calc = calcWeek(
-        companyConfig,
-        { id: e.id, name: e.name, dob: e.dob, res: e.res, prDate: e.prDate, salary: e.salary, pattern: e.pattern, otElig: e.otElig, otMult: e.otMult, cdacOn: e.cdacOn, cdacAmt: e.cdacAmt ?? 0, levyAmt: 0 },
-        ym,
-        wk,
-        weekTs,
-        [],
-        []
-      );
-      return { emp: e, ts: weekTs, calc };
-    });
+  const derived = deriveWeekLeaveTotals(ym, leaveEntries, selected.pattern);
+  const monthTotals = sumLeaveTotals(derived);
+  const usedThisYear = yearUsage.get(selected.id) ?? { mc: 0, pl: 0, ul: 0 };
 
   return (
     <AppShell active="/leave">
@@ -54,87 +67,79 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
         <div>
           <div className="eyebrow">{company.name}</div>
           <h1>MC &amp; leave</h1>
-          <div className="sub">Key in medical, paid and unpaid leave. This never touches overtime, allowances or pay rates.</div>
+          <div className="sub">Pick a person and mark the days they were out. This never touches overtime, allowances or pay rates.</div>
         </div>
       </div>
 
-      <div className="card">
-        <div className="bd stack">
-          <form method="get" className="flex items-end gap-4 flex-wrap">
-            <label className="f" style={{ maxWidth: 170 }}>
-              <span>Month</span>
-              <input className="inp" type="month" name="ym" defaultValue={ym} />
-            </label>
-            <div>
-              <div className="hint" style={{ marginBottom: 6 }}>Week</div>
-              <div className="weekrow" role="group" aria-label="Week">
-                {weeks.map((w) => (
-                  <Link key={w.i} href={`/leave?ym=${ym}&w=${w.i}`} className={w.i === weekIndex ? "on" : ""} title={w.range} prefetch>
-                    {w.label}
-                  </Link>
-                ))}
-              </div>
+      <div className="stack-lg">
+        <div className="card">
+          <div className="bd">
+            <div className="flex items-end gap-4 flex-wrap">
+              <EmployeePicker employees={employees} selectedId={selected.id} basePath="/leave" ym={ym} />
+              <form method="get" className="flex items-end gap-2">
+                <input type="hidden" name="emp" value={selected.id} />
+                <label className="f" style={{ maxWidth: 170 }}>
+                  <span>Month</span>
+                  <input className="inp" type="month" name="ym" defaultValue={ym} />
+                </label>
+                <button className="btn sm" type="submit" style={{ marginBottom: 1 }}>Go</button>
+              </form>
             </div>
-            <noscript>
-              <button className="btn sm" type="submit">Go</button>
-            </noscript>
-          </form>
+          </div>
+        </div>
 
-          <div className="note info">
-            Showing <b>{wk.range}</b>. MC and paid leave don&apos;t change anyone&apos;s pay — they&apos;re recorded for the record. Unpaid leave automatically reduces that week&apos;s pay.
+        <form action={saveLeaveAction} className="stack-lg">
+          <input type="hidden" name="companyId" value={company.id} />
+          <input type="hidden" name="employeeId" value={selected.id} />
+          <input type="hidden" name="ym" value={ym} />
+
+          <div className="card">
+            <div className="hd">
+              <h2>{selected.name} — {ym}</h2>
+              <span className="hint">
+                {selected.pattern}-day week · this month: {n2(monthTotals.mc)} MC, {n2(monthTotals.pl)} leave, {n2(monthTotals.ul)} unpaid
+                {" · "}
+                {year}: MC {n2(usedThisYear.mc)}/{selected.mcEntitlement}, leave {n2(usedThisYear.pl)}/{selected.alEntitlement}
+              </span>
+            </div>
+            <div className="bd stack">
+              <div className="note info">
+                MC and paid leave don&apos;t change anyone&apos;s pay — they&apos;re recorded for the record. Unpaid leave automatically reduces that week&apos;s pay.
+              </div>
+              <LeaveCalendar ym={ym} pattern={selected.pattern} initial={leaveEntries} />
+            </div>
           </div>
 
-          {!rows.length ? (
-            <div className="empty">{allowed ? "No employees have been assigned to your login yet — ask your administrator." : "No active employees yet."}</div>
-          ) : (
-            <form action={saveLeaveAction} className="stack">
-              <input type="hidden" name="companyId" value={company.id} />
-              <input type="hidden" name="ym" value={ym} />
-              <input type="hidden" name="weekIndex" value={weekIndex} />
-              <input type="hidden" name="employeeIds" value={rows.map((r) => r.emp.id).join(",")} />
+          <div className="card">
+            <div className="hd"><h2>Week by week</h2></div>
+            <div className="bd">
               <div className="tw">
                 <table>
                   <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th className="n">Days this week</th>
-                      <th className="n">MC (paid)</th>
-                      <th className="n">Leave (paid)</th>
-                      <th className="n">Unpaid leave</th>
-                    </tr>
+                    <tr><th>Week</th><th className="n">MC</th><th className="n">Leave</th><th className="n">Unpaid</th></tr>
                   </thead>
                   <tbody>
-                    {rows.map(({ emp, ts, calc }) => (
-                      <tr key={emp.id}>
+                    {weeks.map((w, i) => (
+                      <tr key={w.i}>
                         <td>
-                          <div className="strong">{emp.name}</div>
-                          <div className="hint">{emp.empNo}</div>
+                          <div className="strong">{w.label}</div>
+                          <div className="hint">{w.range}</div>
                         </td>
-                        <td className="n">
-                          {n2(calc.days)} <span className="hint">/ {n2(calc.stdWeek)}</span>
-                        </td>
-                        <td className="n">
-                          <input className="inp num" type="number" step="0.5" min="0" name={`mc_${emp.id}`} defaultValue={ts.mc || ""} style={{ width: 90 }} aria-label={`${emp.name} — MC`} />
-                        </td>
-                        <td className="n">
-                          <input className="inp num" type="number" step="0.5" min="0" name={`pl_${emp.id}`} defaultValue={ts.pl || ""} style={{ width: 90 }} aria-label={`${emp.name} — paid leave`} />
-                        </td>
-                        <td className="n">
-                          <input className="inp num" type="number" step="0.5" min="0" name={`ul_${emp.id}`} defaultValue={ts.ul || ""} style={{ width: 90 }} aria-label={`${emp.name} — unpaid leave`} />
-                        </td>
+                        <td className="n">{n2(derived[i].mc)}</td>
+                        <td className="n">{n2(derived[i].pl)}</td>
+                        <td className="n">{n2(derived[i].ul)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <div>
-                <button className="btn pri" type="submit">
-                  Save leave for {wk.label}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
+            </div>
+          </div>
+
+          <div>
+            <button className="btn pri" type="submit">Save {selected.name} — {ym}</button>
+          </div>
+        </form>
       </div>
     </AppShell>
   );

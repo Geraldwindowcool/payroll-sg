@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { timesheetWeeks, monthlyItems } from "@/db/schema";
+import { timesheetWeeks, monthlyItems, employees } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/access";
+import { weeksOfMonth } from "@/lib/payroll";
+import { parseLeaveDaysField, replaceLeaveDaysForMonth } from "@/lib/saveLeaveDays";
 
 function numOrZero(v: FormDataEntryValue | null): number {
   const n = parseFloat(String(v ?? ""));
@@ -17,41 +19,48 @@ function numOrNull(v: FormDataEntryValue | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Full admin timesheet save — one company/month/week, every employee,
- *  every field (unlike the staff-only saveLeaveAction, which only ever
- *  touches mc/pl/ul). Allowance quantities are posted as qty_<empId>_<allowanceId>. */
-export async function saveTimesheetWeekAction(formData: FormData) {
+/** Admin save for one employee's whole month — marked MC/leave dates, the
+ *  per-week hours, and the month's bonus/adjustment/deduction items.
+ *
+ *  MC/leave day counts are always derived from the marked dates (see
+ *  replaceLeaveDaysForMonth) rather than typed in directly, so the stored
+ *  week totals and the calendar can never disagree with each other. */
+export async function saveTimesheetMonthAction(formData: FormData) {
   const admin = await requireAdmin();
 
   const companyId = String(formData.get("companyId") || "");
+  const employeeId = String(formData.get("employeeId") || "");
   const ym = String(formData.get("ym") || "");
-  const weekIndex = Number(formData.get("weekIndex"));
-  const employeeIds = String(formData.get("employeeIds") || "")
-    .split(",")
-    .filter(Boolean);
   const allowanceIds = String(formData.get("allowanceIds") || "")
     .split(",")
     .filter(Boolean);
 
-  if (!companyId || !ym || Number.isNaN(weekIndex) || !employeeIds.length) return;
+  if (!companyId || !employeeId || !/^\d{4}-\d{2}$/.test(ym)) return;
 
-  for (const employeeId of employeeIds) {
+  // Read the work pattern from the employee record — it decides what each
+  // marked date is worth, and must not be taken from the posted form.
+  const [emp] = await db.select().from(employees).where(and(eq(employees.id, employeeId), eq(employees.companyId, companyId))).limit(1);
+  if (!emp) return;
+
+  const entries = parseLeaveDaysField(String(formData.get("leaveDays") || ""), ym);
+  await replaceLeaveDaysForMonth({ companyId, employeeId, ym, pattern: emp.pattern, entries, userId: admin.id });
+
+  // mc/pl/ul are set by replaceLeaveDaysForMonth from the calendar, so they
+  // are deliberately not written again here.
+  for (const w of weeksOfMonth(ym)) {
     const allowanceQty: Record<string, number> = {};
     for (const allowanceId of allowanceIds) {
-      const q = numOrZero(formData.get(`qty_${employeeId}_${allowanceId}`));
+      const q = numOrZero(formData.get(`qty_${w.i}_${allowanceId}`));
       if (q) allowanceQty[allowanceId] = q;
     }
 
     const patch = {
-      days: numOrNull(formData.get(`days_${employeeId}`)),
-      ot: numOrZero(formData.get(`ot_${employeeId}`)),
-      xot: numOrZero(formData.get(`xot_${employeeId}`)),
-      rdS: numOrZero(formData.get(`rdS_${employeeId}`)),
-      rdF: numOrZero(formData.get(`rdF_${employeeId}`)),
-      ph: numOrZero(formData.get(`ph_${employeeId}`)),
-      mc: numOrZero(formData.get(`mc_${employeeId}`)),
-      pl: numOrZero(formData.get(`pl_${employeeId}`)),
-      ul: numOrZero(formData.get(`ul_${employeeId}`)),
+      days: numOrNull(formData.get(`days_${w.i}`)),
+      ot: numOrZero(formData.get(`ot_${w.i}`)),
+      xot: numOrZero(formData.get(`xot_${w.i}`)),
+      rdS: numOrZero(formData.get(`rdS_${w.i}`)),
+      rdF: numOrZero(formData.get(`rdF_${w.i}`)),
+      ph: numOrZero(formData.get(`ph_${w.i}`)),
       allowanceQty,
       updatedByUserId: admin.id,
       updatedAt: new Date(),
@@ -60,60 +69,44 @@ export async function saveTimesheetWeekAction(formData: FormData) {
     const existing = await db
       .select({ id: timesheetWeeks.id })
       .from(timesheetWeeks)
-      .where(and(eq(timesheetWeeks.employeeId, employeeId), eq(timesheetWeeks.ym, ym), eq(timesheetWeeks.weekIndex, weekIndex)))
+      .where(and(eq(timesheetWeeks.employeeId, employeeId), eq(timesheetWeeks.ym, ym), eq(timesheetWeeks.weekIndex, w.i)))
       .limit(1);
 
     if (existing.length) {
       await db.update(timesheetWeeks).set(patch).where(eq(timesheetWeeks.id, existing[0].id));
     } else {
-      await db.insert(timesheetWeeks).values({ companyId, employeeId, ym, weekIndex, ...patch });
+      await db.insert(timesheetWeeks).values({ companyId, employeeId, ym, weekIndex: w.i, ...patch });
     }
+  }
+
+  const itemPatch = {
+    bonus: numOrZero(formData.get("bonus")),
+    adj: numOrZero(formData.get("adj")),
+    adjLbl: String(formData.get("adjLbl") || ""),
+    reimb: numOrZero(formData.get("reimb")),
+    reimbLbl: String(formData.get("reimbLbl") || ""),
+    ded: numOrZero(formData.get("ded")),
+    dedLbl: String(formData.get("dedLbl") || ""),
+    note: String(formData.get("note") || ""),
+    paid: formData.get("paid") === "on",
+    updatedAt: new Date(),
+  };
+
+  const existingItem = await db
+    .select({ id: monthlyItems.id })
+    .from(monthlyItems)
+    .where(and(eq(monthlyItems.employeeId, employeeId), eq(monthlyItems.ym, ym)))
+    .limit(1);
+
+  if (existingItem.length) {
+    await db.update(monthlyItems).set(itemPatch).where(eq(monthlyItems.id, existingItem[0].id));
+  } else {
+    await db.insert(monthlyItems).values({ companyId, employeeId, ym, ...itemPatch });
   }
 
   revalidatePath("/admin/timesheet");
   revalidatePath("/admin/payrun");
   revalidatePath("/admin");
+  revalidatePath("/attendance");
   revalidatePath("/leave");
-}
-
-export async function saveMonthlyItemsAction(formData: FormData) {
-  await requireAdmin();
-
-  const companyId = String(formData.get("companyId") || "");
-  const ym = String(formData.get("ym") || "");
-  const employeeIds = String(formData.get("employeeIds") || "")
-    .split(",")
-    .filter(Boolean);
-  if (!companyId || !ym || !employeeIds.length) return;
-
-  for (const employeeId of employeeIds) {
-    const patch = {
-      bonus: numOrZero(formData.get(`bonus_${employeeId}`)),
-      adj: numOrZero(formData.get(`adj_${employeeId}`)),
-      adjLbl: String(formData.get(`adjLbl_${employeeId}`) || ""),
-      reimb: numOrZero(formData.get(`reimb_${employeeId}`)),
-      reimbLbl: String(formData.get(`reimbLbl_${employeeId}`) || ""),
-      ded: numOrZero(formData.get(`ded_${employeeId}`)),
-      dedLbl: String(formData.get(`dedLbl_${employeeId}`) || ""),
-      note: String(formData.get(`note_${employeeId}`) || ""),
-      paid: formData.get(`paid_${employeeId}`) === "on",
-      updatedAt: new Date(),
-    };
-
-    const existing = await db
-      .select({ id: monthlyItems.id })
-      .from(monthlyItems)
-      .where(and(eq(monthlyItems.employeeId, employeeId), eq(monthlyItems.ym, ym)))
-      .limit(1);
-
-    if (existing.length) {
-      await db.update(monthlyItems).set(patch).where(eq(monthlyItems.id, existing[0].id));
-    } else {
-      await db.insert(monthlyItems).values({ companyId, employeeId, ym, ...patch });
-    }
-  }
-
-  revalidatePath("/admin/timesheet");
-  revalidatePath("/admin/payrun");
-  revalidatePath("/admin");
 }

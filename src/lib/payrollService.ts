@@ -9,9 +9,11 @@ import {
   employeeAllowances,
   timesheetWeeks,
   monthlyItems,
+  leaveDays,
   type Company as CompanyRow,
   type Employee as EmployeeRow,
 } from "@/db/schema";
+import type { LeaveDayEntry } from "@/lib/leave";
 import { and, eq, gte, like, lt, inArray } from "drizzle-orm";
 import {
   CompanyConfig,
@@ -160,6 +162,31 @@ export async function getWeekTimesheetsForCompanyMonth(companyId: string, ym: st
         };
       })
     );
+  }
+  return out;
+}
+
+/** Individual MC / leave dates for one employee in one month. */
+export async function getLeaveDaysForEmployeeMonth(employeeId: string, ym: string): Promise<LeaveDayEntry[]> {
+  const rows = await db
+    .select()
+    .from(leaveDays)
+    .where(and(eq(leaveDays.employeeId, employeeId), like(leaveDays.date, `${ym}-%`)));
+  return rows.map((r) => ({ date: r.date, type: r.type, half: r.half }));
+}
+
+/** Individual MC / leave dates for every employee of a company in one
+ *  month, keyed by employeeId — one query instead of one per employee. */
+export async function getLeaveDaysForCompanyMonth(companyId: string, ym: string): Promise<Map<string, LeaveDayEntry[]>> {
+  const rows = await db
+    .select()
+    .from(leaveDays)
+    .where(and(eq(leaveDays.companyId, companyId), like(leaveDays.date, `${ym}-%`)));
+  const out = new Map<string, LeaveDayEntry[]>();
+  for (const r of rows) {
+    const list = out.get(r.employeeId) ?? [];
+    list.push({ date: r.date, type: r.type, half: r.half });
+    out.set(r.employeeId, list);
   }
   return out;
 }

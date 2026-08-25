@@ -25,6 +25,7 @@ const fk = (column: string) => text(column).notNull();
 export const roleEnum = pgEnum("role", ["ADMIN", "STAFF"]);
 export const residencyEnum = pgEnum("residency", ["SC", "PR", "FW"]);
 export const allowanceBasisEnum = pgEnum("allowance_basis", ["DAY", "HOUR", "FIXED"]);
+export const leaveTypeEnum = pgEnum("leave_type", ["MC", "PL", "UL"]);
 
 // Default CPF configuration — January 2026 figures. Editable per company
 // from Settings once the app is running; this is only the seed value.
@@ -163,6 +164,32 @@ export const employeeAllowances = pgTable(
     rateOverride: numeric("rate_override", { mode: "number", precision: 10, scale: 2 }),
   },
   (t) => [uniqueIndex("emp_allow_unique").on(t.employeeId, t.allowanceId)]
+);
+
+// Individual dates an employee was on MC / paid leave / unpaid leave.
+// The payroll engine still works off the per-week day COUNTS stored on
+// timesheet_weeks (mc/pl/ul) — these rows are the detail behind those
+// counts, so you can see *which* days someone was out, not just how many.
+// Saving the calendar recomputes the affected week totals from these rows
+// (see deriveWeekLeaveTotals), which is why a Saturday counts 0.5 on a
+// 5.5-day pattern and 0 on a 5-day one, exactly as the engine expects.
+export const leaveDays = pgTable(
+  "leave_days",
+  {
+    id: id(),
+    companyId: fk("company_id"),
+    employeeId: fk("employee_id"),
+    date: text("date").notNull(), // ISO "YYYY-MM-DD"
+    type: leaveTypeEnum("type").notNull(),
+    half: boolean("half").notNull().default(false),
+    updatedByUserId: text("updated_by_user_id"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    // One leave entry per employee per date — a day is MC or leave, not both.
+    uniqueIndex("leave_day_unique").on(t.employeeId, t.date),
+    index("leave_day_company_date_idx").on(t.companyId, t.date),
+  ]
 );
 
 // Which employees a STAFF login is allowed to see/edit on the attendance
