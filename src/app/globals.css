@@ -625,6 +625,46 @@ nav.tabs a.on {
   .skeleton { animation: none; }
 }
 
+/* ---------- company switch overlay ---------- */
+.company-switch-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28, 27, 25, 0.18);
+  backdrop-filter: blur(1px);
+}
+.company-switch-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--sp-4) var(--sp-5);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--accent);
+  animation: spinner-spin 0.7s linear infinite;
+  flex: none;
+}
+@keyframes spinner-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; }
+}
+
 @media print {
   nav.tabs, .no-print { display: none !important; }
 }
