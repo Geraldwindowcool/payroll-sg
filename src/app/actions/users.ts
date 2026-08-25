@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { users, employees, employeeAccess } from "@/db/schema";
+import { and, eq, inArray } from "drizzle-orm";
 import { requireAdmin } from "@/lib/access";
 import { hashPassword } from "@/lib/password";
 
@@ -54,4 +54,34 @@ export async function updateUserAction(formData: FormData) {
   }
   await db.update(users).set(patch).where(eq(users.id, id));
   revalidatePath("/admin/settings");
+}
+
+/** Sets which of the active company's employees a Staff login can see on
+ *  the Attendance and MC/leave screens. Scoped to one company per call —
+ *  only touches this company's employee rows, so assignments made for a
+ *  user under a different company (via the company switcher) are left
+ *  alone. Leaving every box unchecked clears this company's assignments
+ *  for that user; if they have no assignments left anywhere, they go back
+ *  to seeing everyone (see allowedEmployeeIds()). */
+export async function setUserEmployeeAccessAction(formData: FormData) {
+  await requireAdmin();
+  const userId = String(formData.get("userId") || "");
+  const companyId = String(formData.get("companyId") || "");
+  if (!userId || !companyId) return;
+
+  const checkedIds = formData.getAll("employeeIds").map(String);
+  const companyEmployees = await db.select({ id: employees.id }).from(employees).where(eq(employees.companyId, companyId));
+  const companyEmployeeIds = companyEmployees.map((e) => e.id);
+  if (!companyEmployeeIds.length) return;
+
+  // Replace this company's slice of the assignment: clear it, then re-add
+  // whatever's checked — never touches rows for other companies.
+  await db.delete(employeeAccess).where(and(eq(employeeAccess.userId, userId), inArray(employeeAccess.employeeId, companyEmployeeIds)));
+  const toAdd = checkedIds.filter((id) => companyEmployeeIds.includes(id));
+  if (toAdd.length) {
+    await db.insert(employeeAccess).values(toAdd.map((employeeId) => ({ userId, employeeId })));
+  }
+  revalidatePath("/admin/settings");
+  revalidatePath("/leave");
+  revalidatePath("/attendance");
 }

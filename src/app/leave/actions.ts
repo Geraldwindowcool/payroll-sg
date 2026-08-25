@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { timesheetWeeks } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
-import { requireUser } from "@/lib/access";
+import { requireUser, allowedEmployeeIds } from "@/lib/access";
 
 /**
  * Saves MC / paid leave / unpaid leave for a batch of employees, for one
@@ -19,9 +19,16 @@ export async function saveLeaveAction(formData: FormData) {
   const companyId = String(formData.get("companyId") || "");
   const ym = String(formData.get("ym") || "");
   const weekIndex = Number(formData.get("weekIndex"));
-  const employeeIds = String(formData.get("employeeIds") || "")
+  let employeeIds = String(formData.get("employeeIds") || "")
     .split(",")
     .filter(Boolean);
+
+  // The real access boundary — the hidden employeeIds field in the form is
+  // just what the page happened to render, not something to trust as-is.
+  // A restricted Staff login gets narrowed back down to their assigned
+  // employees here even if the submitted list claimed more.
+  const allowed = await allowedEmployeeIds();
+  if (allowed) employeeIds = employeeIds.filter((id) => allowed.has(id));
 
   if (!companyId || !ym || Number.isNaN(weekIndex) || !employeeIds.length) return;
 

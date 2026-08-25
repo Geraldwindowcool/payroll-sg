@@ -1,13 +1,13 @@
 import { Fragment } from "react";
 import AppShell from "@/components/AppShell";
 import { getActiveCompany } from "@/lib/activeCompany";
-import { getCompanies, getLevies } from "@/lib/payrollService";
-import { getUsers } from "@/lib/usersService";
+import { getCompanies, getLevies, getEmployees } from "@/lib/payrollService";
+import { getUsers, getEmployeeAccessByUser } from "@/lib/usersService";
 import { auth } from "@/lib/auth";
 import { updateCompanyAction, updateCpfAction } from "@/app/actions/settings";
 import { createLevyAction, updateLevyAction, deleteLevyAction } from "@/app/actions/levies";
 import { addCompanyAction, deleteCompanyAction } from "@/app/actions/company";
-import { createUserAction, updateUserAction } from "@/app/actions/users";
+import { createUserAction, updateUserAction, setUserEmployeeAccessAction } from "@/app/actions/users";
 import type { CpfConfig } from "@/lib/payroll";
 import CreateUserForm from "./CreateUserForm";
 
@@ -32,7 +32,13 @@ export default async function SettingsPage() {
     );
   }
 
-  const [levies, users] = await Promise.all([getLevies(company.id), getUsers()]);
+  const [levies, users, companyEmployees, accessByUser] = await Promise.all([
+    getLevies(company.id),
+    getUsers(),
+    getEmployees(company.id, { activeOnly: true }),
+    getEmployeeAccessByUser(company.id),
+  ]);
+  const sortedCompanyEmployees = [...companyEmployees].sort((a, b) => a.name.localeCompare(b.name));
   const cpf = company.cpf as unknown as CpfConfig;
 
   return (
@@ -190,6 +196,50 @@ export default async function SettingsPage() {
                 </tbody>
               </table>
             </div>
+
+            {users.filter((u) => u.role === "STAFF").length > 0 && (
+              <div className="stack" style={{ paddingTop: "var(--sp-4)", borderTop: "1px solid var(--line)" }}>
+                <div>
+                  <div className="cap" style={{ fontFamily: "var(--font-mono)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-3)" }}>Employee access — {company.name}</div>
+                  <p className="hint" style={{ marginTop: 4 }}>
+                    By default a Staff login sees every employee. Tick specific people below to restrict a login to only them — e.g. a colleague who should only fill in attendance/MC for a few staff, not everyone.
+                  </p>
+                </div>
+                {!sortedCompanyEmployees.length ? (
+                  <div className="hint">No employees on file for this company yet.</div>
+                ) : (
+                  users
+                    .filter((u) => u.role === "STAFF")
+                    .map((u) => {
+                      const assigned = accessByUser.get(u.id);
+                      return (
+                        <details key={u.id} className="card disclosure">
+                          <summary>
+                            {u.name} — {assigned?.size ? `restricted to ${assigned.size} of ${sortedCompanyEmployees.length}` : "sees everyone (unrestricted)"}
+                          </summary>
+                          <div className="bd">
+                            <form action={setUserEmployeeAccessAction} className="stack">
+                              <input type="hidden" name="userId" value={u.id} />
+                              <input type="hidden" name="companyId" value={company.id} />
+                              <div className="flex items-center gap-4 flex-wrap">
+                                {sortedCompanyEmployees.map((e) => (
+                                  <label key={e.id} className="chk">
+                                    <input type="checkbox" name="employeeIds" value={e.id} defaultChecked={assigned?.has(e.id) ?? false} /> {e.name}
+                                  </label>
+                                ))}
+                              </div>
+                              <div>
+                                <button className="btn sm pri" type="submit">Save access for {u.name}</button>
+                              </div>
+                            </form>
+                          </div>
+                        </details>
+                      );
+                    })
+                )}
+              </div>
+            )}
+
             <CreateUserForm action={createUserAction} />
           </div>
         </div>

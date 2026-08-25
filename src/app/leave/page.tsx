@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getActiveCompany } from "@/lib/activeCompany";
 import { getEmployees, getWeekTimesheetsForCompanyMonth, toCompanyConfig } from "@/lib/payrollService";
 import { calcWeek, weeksOfMonth, EMPTY_WEEK, n2 } from "@/lib/payroll";
+import { allowedEmployeeIds } from "@/lib/access";
 import { saveLeaveAction } from "./actions";
 
 function thisMonth() {
@@ -17,7 +18,7 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
 
   if (!company) {
     return (
-      <AppShell>
+      <AppShell active="/leave">
         <div className="note warn">No company has been set up yet. Ask your administrator to add one in Settings.</div>
       </AppShell>
     );
@@ -27,7 +28,8 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
   const weekIndex = sp.w !== undefined ? Number(sp.w) : weeks[0]?.i ?? 0;
   const wk = weeks.find((w) => w.i === weekIndex) ?? weeks[0];
 
-  const [employees, weeksByEmp] = await Promise.all([getEmployees(company.id, { activeOnly: true }), getWeekTimesheetsForCompanyMonth(company.id, ym)]);
+  const [employeesAll, weeksByEmp, allowed] = await Promise.all([getEmployees(company.id, { activeOnly: true }), getWeekTimesheetsForCompanyMonth(company.id, ym), allowedEmployeeIds()]);
+  const employees = allowed ? employeesAll.filter((e) => allowed.has(e.id)) : employeesAll;
   const companyConfig = toCompanyConfig(company);
 
   const rows = employees
@@ -47,7 +49,7 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
     });
 
   return (
-    <AppShell>
+    <AppShell active="/leave">
       <div className="page-head">
         <div>
           <div className="eyebrow">{company.name}</div>
@@ -83,7 +85,7 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
           </div>
 
           {!rows.length ? (
-            <div className="empty">No active employees yet.</div>
+            <div className="empty">{allowed ? "No employees have been assigned to your login yet — ask your administrator." : "No active employees yet."}</div>
           ) : (
             <form action={saveLeaveAction} className="stack">
               <input type="hidden" name="companyId" value={company.id} />

@@ -19,7 +19,8 @@ import { companies, employees, levies } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 
 const COMMIT = process.argv.includes("--commit");
-const COMPANY_NAME = "Window-Cool (S) Pte Ltd"; // "Pte 01"
+const PTE01 = "Window-Cool (S) Pte Ltd 01";
+const PTE02 = "Window-Cool (S) Pte Ltd 02";
 
 type Row = {
   empNo: string;
@@ -37,6 +38,7 @@ type Row = {
   bankName?: string;
   acct?: string;
   notes: string;
+  company?: string; // defaults to PTE01
 };
 
 const ROSTER: Row[] = [
@@ -60,13 +62,20 @@ const ROSTER: Row[] = [
   { empNo: "15", name: "Lim Zhiyu Joie", nric: "T0206380D", dob: "2002-03-01", joinDate: "2025-12-01", title: "Telemarketing (WFH)", res: "SC", salary: 1830, active: true, cdacOn: true, cdacAmt: 0.5, notes: "Telemarketing, WFH. Started 01/12/2025 at $1.6K. +$230 increment starting Jul'26 → now $1,830." },
   { empNo: "16", name: "Jennifer Chia Mui Chin", nric: "S1802949I", dob: "1967-07-23", joinDate: "2025-12-01", title: "Telemarketing (WFH)", res: "SC", salary: 1800, active: true, cdacOn: true, cdacAmt: 0.5, notes: "Telemarketing, WFH. Started 01/12/2025 at $1.6K. +$200 increment starting Jul'26 → now $1,800." },
   { empNo: "17", name: "Tan Ah Huay", nric: "S1776819J", dob: "1966-03-10", joinDate: "2026-05-01", title: "Telemarketing (WFH)", res: "SC", salary: 1800, active: true, cdacOn: true, cdacAmt: 0.5, notes: "Telemarketing, WFH. Started 01/05/2026 at $1.6K. +$200 increment starting Jul'26 → now $1,800. Also referred to as \"Chris\" in payroll notes." },
-  { empNo: "19", name: "Yumei", nric: "78509724", dob: "1982-02-25", joinDate: "2023-05-12", title: "Personnel / Human Resource Officer", res: "FW", salary: 2100, active: true, levyAmt: 400, cdacOn: false, bankName: "POSB", acct: "446593358", notes: "Personnel/HR Officer. Work Permit holder. Confirmed Aug'23 +$100; +$100 31/03/25; WP renewed 5/04/25 +$100; +$200 30/06/25. NOTE: source sheet's Gross Pay ($2,100) differs from its Total Salary/Net Payable ($2,250) for Jul'26 — worth double-checking which is the correct going-forward monthly rate." },
+  { empNo: "19", name: "Yumei", nric: "78509724", dob: "1982-02-25", joinDate: "2023-05-12", title: "Personnel / Human Resource Officer", res: "FW", salary: 2100, active: true, levyAmt: 400, cdacOn: false, bankName: "POSB", acct: "446593358", notes: "Personnel/HR Officer. Work Permit holder. Confirmed Aug'23 +$100; +$100 31/03/25; WP renewed 5/04/25 +$100; +$200 30/06/25. Jul'26 pay was $2,250 = $2,100 base + $500 performance − $350 for 4 days unpaid leave (one-off items, not part of the standing rate)." },
   { empNo: "20", name: "Jance Ma Cristel Geduspan", nric: "G3192679W", dob: "1991-10-02", joinDate: "2015-07-20", title: "Marketing Sales Executive (WFH, Philippines)", res: "FW", salary: 1650, active: true, cdacOn: false, bankName: "DBS", acct: "117167836", notes: "S Pass holder. Marketing Sales Executive, WFH from the Philippines. Joined 01/04/23. +$50 increment 30/06, subject to performance." },
   { empNo: "21", name: "Maricel Magtoto Laurio", nric: "G6267111X", dob: "1979-09-23", joinDate: "2025-06-26", title: "IT Support / Web Master", res: "FW", salary: 4650, active: true, cdacOn: false, notes: "S Pass holder. IT Support/Web Master. +$100 increment Aug'23, no deduction Sep'23 (birthday leave gift). STVP started 28/03/25 ($3,200/12×6=$1,600 Jan–Mar) + Jul'25–Dec'25 ($4,650/12×6=$2,325); total $3,925." },
   { empNo: "22", name: "Ling Kee Leong", nric: "G6718717U", dob: "1987-04-10", joinDate: "2010-05-31", title: "Technician", res: "FW", salary: 3600, active: true, levyAmt: 300, cdacOn: false, notes: "S Pass holder (source sheet had mistakenly marked \"SC\" — confirmed FW/S Pass). Technician. SH increment +$300 1/4/21, +$200 30/10, +$200 01/02/22." },
   { empNo: "23", name: "Wong Wai Foo", nric: "", dob: "1991-01-19", joinDate: "2018-05-14", title: "Technician", res: "FW", salary: 3500, active: true, levyAmt: 400, cdacOn: false, notes: "Work Permit holder — NRIC/FIN field in source document was garbled (\"G6810773W/4 03616729\"); please enter the correct FIN from their work pass/IC. SH increment +$100 Feb'21, +$100 Jun'21, +$200 30/10, +$200 01/02/22. Hospital leave 22–29/09/23. +$200 increment 01/03/26." },
-  { empNo: "24", name: "Rasu Pandian", nric: "33951086", dob: "1989-04-06", joinDate: "2024-07-02", title: "Builder", res: "FW", salary: 1600, active: true, levyAmt: 500, cdacOn: false, bankName: "OCBC", acct: "576400139001", notes: "Work Permit holder (\"Lucas Builder\"), joined 09/03/24, started with company 02/07/24. Salary advance: $1,800 full advance for May'26, $1,200 partial advance for Jun'26 — remaining $600 balance to be deducted at $300/month across Jul'26 and Aug'26 pay." },
-  { empNo: "25", name: "Muthu Manikandan", nric: "", dob: "2003-12-29", joinDate: "2026-04-28", title: "Junior Technician", res: "FW", salary: 1200, active: true, levyAmt: 900, cdacOn: false, bankName: "POSB", acct: "455557356", notes: "Work Permit holder — NRIC/FIN field in source document was garbled (\"39693844/M35902 91\"); please enter the correct FIN from their work pass. Junior Technician, Rasu Pandian's friend, joined 28/04/26. Pay includes 3 days at $7.50/wk per MOM calculation on employment details." },
+  // Moved to Pte 02 on Gerald's confirmation (see scripts/move-rasu-to-pte02.ts)
+  // — kept pointed at PTE02 here too so re-running this import stays safe
+  // and doesn't recreate him under Pte 01.
+  { empNo: "24", name: "Rasu Pandian", nric: "33951086", dob: "1989-04-06", joinDate: "2024-07-02", title: "Builder", res: "FW", salary: 1600, active: true, levyAmt: 500, cdacOn: false, bankName: "OCBC", acct: "576400139001", company: PTE02, notes: "Work Permit holder (\"Lucas Builder\"), joined 09/03/24, started with company 02/07/24. Salary advance: $1,800 full advance for May'26, $1,200 partial advance for Jun'26 — remaining $600 balance to be deducted at $300/month across Jul'26 and Aug'26 pay." },
+  // Appears on the Pte-01 sheet but is excluded from every one of its totals
+  // (gross pay, total salary, levy and SDF each reconcile only once his row
+  // is left out), and the sheet carries a "PTE-02" annotation — so he is
+  // paid under Pte 02, confirmed with Gerald.
+  { empNo: "25", name: "Muthu Manikandan", nric: "", dob: "2003-12-29", joinDate: "2026-04-28", title: "Junior Technician", res: "FW", salary: 1200, active: true, levyAmt: 900, cdacOn: false, bankName: "POSB", acct: "455557356", company: PTE02, notes: "Work Permit holder — NRIC/FIN field in source document was garbled (\"39693844/M35902 91\"); please enter the correct FIN from their work pass. Junior Technician, Rasu Pandian's friend, joined 28/04/26. Pay includes 3 days at $7.50/wk per MOM calculation on employment details. Listed on the Pte-01 sheet but excluded from its totals — paid under Pte 02." },
 ];
 
 async function findOrCreateLevy(companyId: string, amt: number): Promise<string> {
@@ -78,14 +87,20 @@ async function findOrCreateLevy(companyId: string, amt: number): Promise<string>
 }
 
 async function main() {
-  const [company] = await db.select().from(companies).where(eq(companies.name, COMPANY_NAME)).limit(1);
-  if (!company) {
-    console.error(`Company "${COMPANY_NAME}" not found. Companies on file:`);
-    const all = await db.select().from(companies);
-    for (const c of all) console.error(`  - ${c.name}`);
+  const allCompanies = await db.select().from(companies);
+  const byName = new Map(allCompanies.map((c) => [c.name, c]));
+
+  // Fail before writing anything if any company named on the roster is missing.
+  const wanted = Array.from(new Set(ROSTER.map((r) => r.company ?? PTE01)));
+  const missing = wanted.filter((n) => !byName.has(n));
+  if (missing.length) {
+    console.error(`Company not found: ${missing.map((m) => `"${m}"`).join(", ")}`);
+    console.error("Companies on file:");
+    for (const c of allCompanies) console.error(`  - ${c.name}`);
     process.exit(1);
   }
-  console.log(`Company: ${company.name} (${company.id})`);
+
+  for (const n of wanted) console.log(`Company: ${n} (${byName.get(n)!.id})`);
   console.log(COMMIT ? "*** COMMIT MODE — this will write to the database ***" : "--- DRY RUN — nothing will be written. Re-run with --commit to actually import. ---");
   console.log("");
 
@@ -93,12 +108,14 @@ async function main() {
     skipped = 0;
 
   for (const row of ROSTER) {
+    const company = byName.get(row.company ?? PTE01)!;
+    const intoLabel = row.company ? `  → ${row.company}` : "";
     const existing = row.nric
       ? await db.select().from(employees).where(and(eq(employees.companyId, company.id), eq(employees.nric, row.nric))).limit(1)
       : await db.select().from(employees).where(and(eq(employees.companyId, company.id), eq(employees.name, row.name))).limit(1);
 
     if (existing.length) {
-      console.log(`SKIP  (already exists) — ${row.name}`);
+      console.log(`SKIP  (already exists) — ${row.name}${intoLabel}`);
       skipped++;
       continue;
     }
@@ -106,7 +123,7 @@ async function main() {
     let levyId: string | null = null;
     if (row.levyAmt) levyId = await findOrCreateLevy(company.id, row.levyAmt);
 
-    console.log(`ADD   ${row.name} — ${row.res}, $${row.salary}/mth, ${row.active ? "active" : "INACTIVE"}${row.levyAmt ? `, levy $${row.levyAmt}` : ""}${row.nric ? "" : "  [NRIC MISSING — fill in later]"}`);
+    console.log(`ADD   ${row.name} — ${row.res}, $${row.salary}/mth, ${row.active ? "active" : "INACTIVE"}${row.levyAmt ? `, levy $${row.levyAmt}` : ""}${row.nric ? "" : "  [NRIC MISSING — fill in later]"}${intoLabel}`);
 
     if (COMMIT) {
       await db.insert(employees).values({

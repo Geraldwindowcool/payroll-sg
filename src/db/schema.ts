@@ -165,6 +165,21 @@ export const employeeAllowances = pgTable(
   (t) => [uniqueIndex("emp_allow_unique").on(t.employeeId, t.allowanceId)]
 );
 
+// Which employees a STAFF login is allowed to see/edit on the attendance
+// and MC/leave screens. A Staff user with NO rows here is unrestricted
+// (sees everyone) — this keeps every existing login working exactly as
+// before; scoping only kicks in once an admin deliberately assigns a
+// specific list to that login from Settings.
+export const employeeAccess = pgTable(
+  "employee_access",
+  {
+    id: id(),
+    userId: fk("user_id"),
+    employeeId: fk("employee_id"),
+  },
+  (t) => [uniqueIndex("user_employee_access_unique").on(t.userId, t.employeeId), index("employee_access_user_idx").on(t.userId)]
+);
+
 // One row per employee, per month, per week-of-month (0-5). Staff logins
 // are restricted (at the application layer, in src/lib/access.ts) to
 // writing only the mc / pl / ul columns on this table.

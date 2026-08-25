@@ -17,6 +17,11 @@ const ADMIN_TABS = [
   { href: "/admin/settings", label: "Settings" },
 ];
 
+const STAFF_TABS = [
+  { href: "/attendance", label: "Attendance & MC" },
+  { href: "/leave", label: "MC & leave only" },
+];
+
 export default async function AppShell({ children, active }: { children: React.ReactNode; active?: string }) {
   const session = await auth();
   const user = session?.user;
@@ -28,7 +33,7 @@ export default async function AppShell({ children, active }: { children: React.R
     <div className="min-h-screen flex flex-col">
       <header style={{ position: "sticky", top: 0, zIndex: 20, borderBottom: "1px solid var(--line)", background: "rgba(255,255,255,0.92)", backdropFilter: "blur(6px)" }}>
         <div className="container flex items-center gap-4 flex-wrap" style={{ paddingTop: 12, paddingBottom: 12 }}>
-          <Link href={isAdmin ? "/admin" : "/leave"} className="flex items-center gap-3" style={{ textDecoration: "none" }}>
+          <Link href={isAdmin ? "/admin" : "/attendance"} className="flex items-center gap-3" style={{ textDecoration: "none" }}>
             <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold" style={{ background: "var(--ink)", color: "#fff", boxShadow: "var(--shadow-sm)" }}>
               PS
             </div>
@@ -54,9 +59,9 @@ export default async function AppShell({ children, active }: { children: React.R
             </div>
           )}
         </div>
-        {isAdmin && (
+        {user && (
           <nav className="tabs container" aria-label="Payroll sections">
-            {ADMIN_TABS.map((t) => (
+            {(isAdmin ? ADMIN_TABS : STAFF_TABS).map((t) => (
               <Link key={t.href} href={t.href} className={active === t.href ? "on" : ""}>
                 {t.label}
               </Link>
