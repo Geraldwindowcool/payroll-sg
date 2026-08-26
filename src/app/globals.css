@@ -1,32 +1,37 @@
 @import "tailwindcss";
 
 /* ================================================================
-   Payroll SG — design tokens ("editorial minimalism": warm paper
-   background, ink text, serif headings, monospace labels, muted
+   Payroll SG — design tokens ("modern SaaS dashboard": light slate
+   background, white cards, bold sans headings, indigo accent, colored
    status pills). This file is the single source of visual truth —
    pages reach for these classes instead of one-off inline styles,
    so spacing and rhythm stay consistent across the whole app.
 ================================================================ */
 :root {
-  --paper: #faf9f6;
+  /* "Modern SaaS dashboard" palette — cool slate neutrals, indigo accent,
+     high-contrast bold sans headings. Replaced the earlier warm-paper /
+     serif "editorial" look on request, aiming for something closer to a
+     typical modern platform-ops dashboard: light gray-blue background,
+     white cards, bold black numbers, colored deltas. */
+  --paper: #f8fafc;
   --surface: #ffffff;
-  --surface-2: #f3f1ec;
-  --surface-3: #ece8de;
-  --ink: #1c1b19;
-  --ink-2: #4a4944;
-  --ink-3: #6b6b66;
-  --line: #e6e3da;
-  --line-strong: #d8d4c8;
-  --accent: #2563eb;
-  --accent-ink: #1d4ed8;
-  --accent-soft: #e8eefd;
-  --good: #166534;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
+  --ink: #0f172a;
+  --ink-2: #334155;
+  --ink-3: #64748b;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --accent: #4f46e5;
+  --accent-ink: #4338ca;
+  --accent-soft: #eef2ff;
+  --good: #16a34a;
   --good-soft: #e7f4ea;
   --good-line: #bfe2c8;
   --warn: #92400e;
   --warn-soft: #fdf1de;
   --warn-line: #f2dcae;
-  --bad: #991b1b;
+  --bad: #dc2626;
   --bad-soft: #fbe9e9;
   --bad-line: #f0c6c6;
 
@@ -40,12 +45,12 @@
   --sp-7: 40px;
   --sp-8: 56px;
 
-  --r-sm: 7px;
-  --r-md: 12px;
-  --r-lg: 16px;
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
 
-  --shadow-sm: 0 1px 2px rgba(28, 27, 25, 0.04), 0 1px 1px rgba(28, 27, 25, 0.03);
-  --shadow-md: 0 6px 20px -8px rgba(28, 27, 25, 0.14), 0 2px 6px -2px rgba(28, 27, 25, 0.06);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.03), 0 1px 1px rgba(15, 23, 42, 0.02);
+  --shadow-md: 0 6px 20px -8px rgba(15, 23, 42, 0.12), 0 2px 6px -2px rgba(15, 23, 42, 0.05);
 
   --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -83,8 +88,8 @@ body {
 }
 
 h1, h2, h3 {
-  font-family: var(--font-serif);
-  font-weight: 500;
+  font-family: var(--font-sans);
+  font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.2;
 }
@@ -132,10 +137,9 @@ a {
   margin-bottom: var(--sp-5);
 }
 .eyebrow {
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 11px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
   color: var(--ink-3);
 }
 .page-head .eyebrow {
@@ -237,9 +241,9 @@ a {
   border-color: var(--accent);
 }
 .btn.pri {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--surface);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
   box-shadow: var(--shadow-sm);
 }
 .btn.pri:hover {
@@ -295,11 +299,10 @@ a {
      entitlement (days/yr)") wraps to 2 lines while its row-neighbours
      stay on 1, and their input boxes end up at different heights. */
   min-height: 2.6em;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
   line-height: 1.3;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--ink-3);
   margin-bottom: 5px;
 }
@@ -343,10 +346,9 @@ label.chk input {
   border-top: 1px solid var(--line);
 }
 .fgroup > .cap {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
   color: var(--ink-3);
   margin-bottom: var(--sp-3);
 }
@@ -407,18 +409,19 @@ label.chk input {
   border-color: var(--ink);
 }
 .stat .k {
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
   color: var(--ink-3);
 }
 .stat.accent .k {
   color: rgba(255, 255, 255, 0.6);
 }
 .stat .v {
-  font-size: 26px;
-  font-family: var(--font-serif);
+  font-size: 34px;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  letter-spacing: -0.01em;
   margin: 6px 0 3px;
 }
 .stat.accent .v {
@@ -473,7 +476,7 @@ th, td {
   vertical-align: middle;
 }
 th {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -560,8 +563,9 @@ nav.tabs a:hover {
   color: var(--ink);
 }
 nav.tabs a.on {
-  color: var(--ink);
-  border-color: var(--ink);
+  color: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
 }
 
 /* week-selector pill row (Timesheet / Leave) */
@@ -601,7 +605,7 @@ nav.tabs a.on {
   }
 }
 .slip-sec {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -675,10 +679,9 @@ nav.tabs a.on {
   white-space: nowrap;
 }
 .mini-stat .k {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
   color: var(--ink-3);
 }
 .mini-stat .v {
@@ -715,7 +718,7 @@ nav.tabs a.on {
   gap: 4px;
 }
 .cal-head {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -772,7 +775,7 @@ nav.tabs a.on {
   font-weight: 600;
 }
 .cal-tag {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.04em;

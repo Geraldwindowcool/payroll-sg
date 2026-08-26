@@ -1,51 +1,51 @@
 # Payroll SG — Design System
 
-*Extracted from the existing codebase (`src/app/globals.css` and page conventions), not invented. This documents what the app already does consistently, so new screens (like the Attendance/Timesheet redesign) match instead of drifting.*
+*Originally extracted from the codebase's "editorial minimalism" look; revised on request to a "modern SaaS dashboard" direction, matched against a supplied reference screenshot (a platform-ops dashboard: dark icon sidebar, white rounded cards, bold black numbers, indigo accent, colored deltas). Navigation position was deliberately kept as top tabs rather than adopting the reference's left sidebar — changing where every button lives wasn't worth it for two non-technical daily users who already know the current layout. Everything else — color, type, card treatment — follows the reference.*
 
 ## 0. Scope note
 
-This is an internal payroll/HR data-entry tool for a small Singapore business — administrators and one or two staff logins, not a public site. The taste-skill fit here is **operational/restrained**: no marketing-page treatment (no glassmorphism, scroll-triggered motion, hero imagery, decorative gradients). Every existing page already follows this discipline; this file exists to keep it that way as the app grows, not to change direction.
+This is an internal payroll/HR data-entry tool for a small Singapore business — administrators and one or two staff logins, not a public site. Still operational/restrained in spirit (no glassmorphism, scroll-triggered motion, hero imagery, decorative gradients) — the "modern SaaS" reference itself is calm and functional, not flashy, so this revision is a palette/type change, not a swing toward marketing-site treatment.
 
 ## 1. Atmosphere & Identity
 
-A quiet paper ledger, not a SaaS dashboard. Warm off-white paper background, ink-black text, a serif (Newsreader) for page titles and card headings that gives it a bookkeeping/stationery feel against otherwise plain sans-serif UI chrome. The signature: **restraint communicates trustworthiness** — a payroll tool should look like it takes money seriously, which here means calm, unhurried spacing and almost no color except where color carries real meaning (status pills, the one blue accent for interactive elements).
+A clean, modern operations dashboard — light slate-gray background, white cards with hairline borders, bold black sans-serif numbers doing the talking, one indigo accent reserved for interactive elements, green/red used only where a number is genuinely good or bad news. The signature: **numbers first** — a stat tile's value is the biggest, boldest thing on the page, its label small and quiet above it, matching how the reference makes "847" and "$42.8k" read instantly while "Active workloads" and "Monthly spend" stay out of the way.
 
 ## 2. Color
 
 | Role | Token | Value | Usage |
 |---|---|---|---|
-| Page background | `--paper` | `#faf9f6` | `<body>` |
+| Page background | `--paper` | `#f8fafc` | `<body>` |
 | Card/input surface | `--surface` | `#ffffff` | Cards, inputs |
-| Recessed surface | `--surface-2` | `#f3f1ec` | Skeleton loaders, subtle fills |
-| Deeper recessed | `--surface-3` | `#ece8de` | Rarely used, deepest fill |
-| Text/primary | `--ink` | `#1c1b19` | Headings, primary text |
-| Text/secondary | `--ink-2` | `#4a4944` | Body copy |
-| Text/tertiary | `--ink-3` | `#6b6b66` | Hints, captions, secondary labels |
-| Border/default | `--line` | `#e6e3da` | Card borders, dividers |
-| Border/strong | `--line-strong` | `#d8d4c8` | Input borders |
-| Accent | `--accent` / `--accent-ink` | `#2563eb` / `#1d4ed8` | Links, primary buttons, focus rings, the ONE color used for interactivity |
-| Accent soft | `--accent-soft` | `#e8eefd` | Accent pill background, focus-ring glow |
-| Success | `--good` / `--good-soft` / `--good-line` | `#166534` / `#e7f4ea` / `#bfe2c8` | Active status, paid leave |
+| Recessed surface | `--surface-2` | `#f1f5f9` | Skeleton loaders, subtle fills, table header background |
+| Deeper recessed | `--surface-3` | `#e2e8f0` | Rarely used, deepest fill |
+| Text/primary | `--ink` | `#0f172a` | Headings, primary text, the dark "accent" stat tile background |
+| Text/secondary | `--ink-2` | `#334155` | Body copy |
+| Text/tertiary | `--ink-3` | `#64748b` | Hints, captions, secondary labels |
+| Border/default | `--line` | `#e2e8f0` | Card borders, dividers |
+| Border/strong | `--line-strong` | `#cbd5e1` | Input borders |
+| Accent | `--accent` / `--accent-ink` | `#4f46e5` / `#4338ca` | Links, primary buttons, focus rings, active nav tab — the ONE color used for interactivity |
+| Accent soft | `--accent-soft` | `#eef2ff` | Accent pill background, focus-ring glow |
+| Success | `--good` / `--good-soft` / `--good-line` | `#16a34a` / `#e7f4ea` / `#bfe2c8` | Active status, paid leave, positive deltas |
 | Warning | `--warn` / `--warn-soft` / `--warn-line` | `#92400e` / `#fdf1de` / `#f2dcae` | MC, cautions |
-| Error | `--bad` / `--bad-soft` / `--bad-line` | `#991b1b` / `#fbe9e9` / `#f0c6c6` | Inactive status, unpaid leave, destructive actions |
+| Error | `--bad` / `--bad-soft` / `--bad-line` | `#dc2626` / `#fbe9e9` / `#f0c6c6` | Inactive status, unpaid leave, destructive actions, critical deltas |
 
 ### Rules (already enforced across the app)
-- Accent blue is used ONLY for interactive elements (links, primary buttons, focus rings, the active nav tab) — never decorative.
+- Accent indigo is used ONLY for interactive elements (links, primary buttons, focus rings, the active nav tab) — never decorative.
 - Status color (green/amber/red/gray/blue) always pairs a soft background + matching line + matching ink text — see `.pill` and the leave-calendar day states. Never a solid color fill with white text except on `.btn.pri`.
 - No gradients, no glassmorphism, no drop shadows beyond the two defined levels below.
 
 ## 3. Typography
 
-- **Serif** (`--font-serif`: Newsreader, Georgia, Times New Roman) — page `<h1>`, card `<h2>` headings only. Never body text, never form labels.
-- **Sans** (`--font-sans`: system font stack) — everything else: labels, body, buttons, table cells.
-- **Mono** (`--font-mono`: JetBrains Mono) — small uppercase eyebrows/captions/section dividers (`.cap`, `.eyebrow`, `.hint` in some places) and numeric-heavy contexts (money columns use `font-variant-numeric: tabular-nums` via `.inp.num` / `.n`).
+- **Sans** (`--font-sans`: system font stack) — everything, including headings. `h1`/`h2`/`h3` are bold (700), `.stat .v` is extra-bold (800) — the reference's headings and big numbers are bold sans, not a display/serif face, so headings and body now share one family, differentiated by weight and size rather than by typeface.
+- **Mono** (`--font-mono`: JetBrains Mono) — kept only for a handful of small, dense, glanceable bits where tabular alignment matters: table `th` money columns' `font-variant-numeric: tabular-nums`, the leave calendar's day-of-week/date-badge text. No longer used for eyebrows, captions, or stat labels — those moved to plain sans to match the reference's plain gray sentence-case labels ("Active workloads", not "ACTIVE WORKLOADS").
+- Serif (`--font-serif`, Newsreader) is defined but unused — kept in case a future deliberate exception wants it back, but no component should reach for it.
 
 ### Scale in use
-Page `<h1>` ≈ 26–28px serif · card `<h2>` ≈ 14–16px serif · body/labels 13–14px sans · hints/captions 10.5–12px sans or mono uppercase with `letter-spacing: 0.04–0.08em`.
+Page `<h1>` ≈ 28px bold sans · card `<h2>` ≈ 16px bold sans · stat value ≈ 34px extra-bold sans · body/labels 13–14px sans · hints/captions 12–13px sans, regular/medium weight, no letter-spacing.
 
 ### Rules
 - Never introduce a third body font.
-- Uppercase lettered captions (`.cap`, `.eyebrow`) always get `letter-spacing` — bare uppercase without tracking reads as a mistake, not a style.
+- Labels are plain sentence case now, not uppercase-with-tracking — don't reintroduce uppercase micro-labels without a specific reason; it was a deliberate change away from the earlier "editorial caption" style.
 
 ## 4. Spacing
 
@@ -95,7 +95,7 @@ Every `.btn` and `.inp` has hover/focus-visible. `.cal-cell` has hover/focus-vis
 
 ## 7. Depth & Surface
 
-**Strategy: mostly borders, shadows used sparingly for genuine elevation only.** `--shadow-sm` on cards at rest (barely perceptible — reads more as a border reinforcement than a "floating" surface). `--shadow-md` reserved for things that should read as elevated above the page (the company-switch overlay card). No `backdrop-filter`, no glass, no glow effects.
+**Strategy: mostly borders, shadows used sparingly for genuine elevation only.** `--shadow-sm` on cards at rest (barely perceptible — reads more as a border reinforcement than a "floating" surface, matching the reference's near-flat white cards). `--shadow-md` reserved for things that should read as elevated above the page (the company-switch overlay card). Radii were bumped up (`--r-sm` 8px, `--r-md` 14px, `--r-lg` 20px) for a rounder, more "SaaS dashboard" card shape than the earlier tighter corners. No `backdrop-filter`, no glass, no glow effects.
 
 ## 8. Accessibility Constraints & Accepted Debt
 

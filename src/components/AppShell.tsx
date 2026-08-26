@@ -37,7 +37,7 @@ export default async function AppShell({ children, active }: { children: React.R
           <Link href={isAdmin ? "/admin" : "/attendance"} className="flex items-center gap-3" style={{ textDecoration: "none" }}>
             <Image src="/window-cool-logo.png" alt="Window-Cool" width={173} height={34} priority style={{ height: 30, width: "auto" }} />
             <div>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: 17, color: "var(--ink)", lineHeight: 1.15 }}>Payroll</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: 17, color: "var(--ink)", lineHeight: 1.15 }}>Payroll</div>
               <div className="hint" style={{ fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" }}>Singapore payroll</div>
             </div>
           </Link>
