@@ -832,6 +832,18 @@ nav.tabs a.on {
   animation: spinner-spin 0.7s linear infinite;
   flex: none;
 }
+/* Smaller variant for inside a button (SubmitButton) — .btn.pri is a dark
+   ink-filled button, so it needs a light-on-dark ring instead of the
+   default light-on-white one. */
+.btn .spinner {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+}
+.btn.pri .spinner {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+}
 @keyframes spinner-spin {
   to { transform: rotate(360deg); }
 }

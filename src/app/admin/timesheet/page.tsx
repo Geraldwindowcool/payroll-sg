@@ -1,5 +1,6 @@
 import AppShell from "@/components/AppShell";
 import EmployeePicker from "@/components/EmployeePicker";
+import SubmitButton from "@/components/SubmitButton";
 import LeaveCalendar from "@/components/LeaveCalendar";
 import { getActiveCompany } from "@/lib/activeCompany";
 import {
@@ -219,7 +220,7 @@ export default async function AdminTimesheetPage({ searchParams }: { searchParam
           </div>
 
           <div>
-            <button className="btn pri" type="submit">Save {selected.name} — {ym}</button>
+            <SubmitButton>Save {selected.name} — {ym}</SubmitButton>
           </div>
         </form>
       </div>
