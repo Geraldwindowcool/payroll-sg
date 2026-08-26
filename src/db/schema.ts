@@ -28,6 +28,7 @@ export const allowanceBasisEnum = pgEnum("allowance_basis", ["DAY", "HOUR", "FIX
 export const leaveTypeEnum = pgEnum("leave_type", ["MC", "PL", "UL"]);
 export const budgetCategoryTypeEnum = pgEnum("budget_category_type", ["INCOME", "EXPENSE"]);
 export const budgetEntrySourceEnum = pgEnum("budget_entry_source", ["MANUAL", "XERO"]);
+export const payrollCashAdjustmentReasonEnum = pgEnum("payroll_cash_adjustment_reason", ["DEFERRED_DRAW", "UNPAID_LEAVE_CPF", "COST_SHARE", "OTHER"]);
 
 // Default CPF configuration — January 2026 figures. Editable per company
 // from Settings once the app is running; this is only the seed value.
@@ -370,6 +371,36 @@ export const xeroConnections = pgTable(
   (t) => [uniqueIndex("xero_connections_company_unique").on(t.companyId)]
 );
 
+// Reconciles this month's real, accrued payroll cost (the figure CPF is
+// actually filed on — never touched by this table) against what was
+// really paid out in cash, for real, disclosed reasons: a deferred
+// owner's draw, an employee on unpaid leave, or a cost-share/secondment
+// arrangement with another company. Every row needs a note — this is a
+// transparent reconciliation ledger, not a way to make numbers disappear.
+// Purely a Budget-side reporting overlay; it never feeds back into
+// payroll calculations, CPF filings, payslips, or the bank file.
+export const payrollCashAdjustments = pgTable(
+  "payroll_cash_adjustments",
+  {
+    id: id(),
+    companyId: fk("company_id"),
+    employeeId: text("employee_id"),
+    ym: text("ym").notNull(), // "YYYY-MM"
+    reason: payrollCashAdjustmentReasonEnum("reason").notNull(),
+    amount: numeric("amount", { mode: "number", precision: 10, scale: 2 }).notNull(),
+    note: text("note").notNull(),
+    createdByUserId: text("created_by_user_id"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("payroll_cash_adjustments_company_ym_idx").on(t.companyId, t.ym)]
+);
+
+export const payrollCashAdjustmentsRelations = relations(payrollCashAdjustments, ({ one }) => ({
+  company: one(companies, { fields: [payrollCashAdjustments.companyId], references: [companies.id] }),
+  employee: one(employees, { fields: [payrollCashAdjustments.employeeId], references: [employees.id] }),
+}));
+
 export const budgetCategoriesRelations = relations(budgetCategories, ({ one, many }) => ({
   company: one(companies, { fields: [budgetCategories.companyId], references: [companies.id] }),
   entries: many(budgetEntries),
@@ -395,3 +426,4 @@ export type MonthlyItem = typeof monthlyItems.$inferSelect;
 export type BudgetCategory = typeof budgetCategories.$inferSelect;
 export type BudgetEntry = typeof budgetEntries.$inferSelect;
 export type XeroConnection = typeof xeroConnections.$inferSelect;
+export type PayrollCashAdjustment = typeof payrollCashAdjustments.$inferSelect;
