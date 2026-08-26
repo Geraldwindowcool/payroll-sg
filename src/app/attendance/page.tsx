@@ -125,7 +125,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
           <div className="bd">
             <div className="flex items-end gap-4 flex-wrap">
               <EmployeePicker employees={employees} selectedId={selected.id} basePath="/attendance" ym={ym} />
-              <MonthPicker ym={ym} employeeId={selected.id} basePath="/attendance" />
+              <MonthPicker ym={ym} extraParams={{ emp: selected.id }} basePath="/attendance" />
             </div>
           </div>
         </div>

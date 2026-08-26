@@ -78,7 +78,7 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
           <div className="bd">
             <div className="flex items-end gap-4 flex-wrap">
               <EmployeePicker employees={employees} selectedId={selected.id} basePath="/leave" ym={ym} />
-              <MonthPicker ym={ym} employeeId={selected.id} basePath="/leave" />
+              <MonthPicker ym={ym} extraParams={{ emp: selected.id }} basePath="/leave" />
             </div>
           </div>
         </div>

@@ -41,6 +41,6 @@ export async function autoSaveLeaveDaysAction(companyId: string, employeeId: str
   revalidatePath("/leave");
   revalidatePath("/admin/timesheet");
   revalidatePath("/admin/payrun");
-  revalidatePath("/admin");
+  revalidatePath("/admin/payroll");
   return { ok: true };
 }

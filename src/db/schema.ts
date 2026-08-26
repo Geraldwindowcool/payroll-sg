@@ -26,6 +26,7 @@ export const roleEnum = pgEnum("role", ["ADMIN", "STAFF"]);
 export const residencyEnum = pgEnum("residency", ["SC", "PR", "FW"]);
 export const allowanceBasisEnum = pgEnum("allowance_basis", ["DAY", "HOUR", "FIXED"]);
 export const leaveTypeEnum = pgEnum("leave_type", ["MC", "PL", "UL"]);
+export const budgetCategoryTypeEnum = pgEnum("budget_category_type", ["INCOME", "EXPENSE"]);
 
 // Default CPF configuration — January 2026 figures. Editable per company
 // from Settings once the app is running; this is only the seed value.
@@ -305,6 +306,54 @@ export const monthlyItemsRelations = relations(monthlyItems, ({ one }) => ({
   company: one(companies, { fields: [monthlyItems.companyId], references: [companies.id] }),
 }));
 
+// A whole-business budget, tracked per company like everything else here.
+// Categories are the "lines" of a budget (Rent, Marketing, Payroll, ...);
+// entries are the actual dated amounts logged against a category+month.
+// The "Payroll" category is special: isSystem=true, never has entries of
+// its own — its actual figure is always computed live from
+// getMonthPayroll(), so it can never drift out of sync with real payroll.
+export const budgetCategories = pgTable(
+  "budget_categories",
+  {
+    id: id(),
+    companyId: fk("company_id"),
+    name: text("name").notNull(),
+    type: budgetCategoryTypeEnum("type").notNull(),
+    monthlyTarget: numeric("monthly_target", { mode: "number", precision: 10, scale: 2 }),
+    isSystem: boolean("is_system").notNull().default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("budget_categories_company_idx").on(t.companyId)]
+);
+
+export const budgetEntries = pgTable(
+  "budget_entries",
+  {
+    id: id(),
+    companyId: fk("company_id"),
+    categoryId: fk("category_id"),
+    ym: text("ym").notNull(), // "YYYY-MM"
+    amount: numeric("amount", { mode: "number", precision: 10, scale: 2 }).notNull(),
+    description: text("description").notNull().default(""),
+    updatedByUserId: text("updated_by_user_id"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("budget_entries_company_ym_idx").on(t.companyId, t.ym), index("budget_entries_category_idx").on(t.categoryId)]
+);
+
+export const budgetCategoriesRelations = relations(budgetCategories, ({ one, many }) => ({
+  company: one(companies, { fields: [budgetCategories.companyId], references: [companies.id] }),
+  entries: many(budgetEntries),
+}));
+
+export const budgetEntriesRelations = relations(budgetEntries, ({ one }) => ({
+  company: one(companies, { fields: [budgetEntries.companyId], references: [companies.id] }),
+  category: one(budgetCategories, { fields: [budgetEntries.categoryId], references: [budgetCategories.id] }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type Company = typeof companies.$inferSelect;
 export type Levy = typeof levies.$inferSelect;
@@ -313,3 +362,5 @@ export type Employee = typeof employees.$inferSelect;
 export type EmployeeAllowance = typeof employeeAllowances.$inferSelect;
 export type TimesheetWeek = typeof timesheetWeeks.$inferSelect;
 export type MonthlyItem = typeof monthlyItems.$inferSelect;
+export type BudgetCategory = typeof budgetCategories.$inferSelect;
+export type BudgetEntry = typeof budgetEntries.$inferSelect;

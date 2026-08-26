@@ -37,5 +37,5 @@ export async function saveLeaveAction(formData: FormData) {
   revalidatePath("/attendance");
   revalidatePath("/admin/timesheet");
   revalidatePath("/admin/payrun");
-  revalidatePath("/admin");
+  revalidatePath("/admin/payroll");
 }

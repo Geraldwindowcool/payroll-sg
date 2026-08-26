@@ -144,7 +144,7 @@ export async function saveTimesheetMonthAction(formData: FormData) {
 
   revalidatePath("/admin/timesheet");
   revalidatePath("/admin/payrun");
-  revalidatePath("/admin");
+  revalidatePath("/admin/payroll");
   revalidatePath("/attendance");
   revalidatePath("/leave");
 }

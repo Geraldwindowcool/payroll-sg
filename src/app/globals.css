@@ -213,6 +213,45 @@ a {
   border-bottom: 1px solid var(--line);
 }
 
+/* ---------- hub cards (Admin landing page: Payroll / Budget) ---------- */
+.hub-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--sp-4);
+  max-width: 720px;
+}
+a.hub-card {
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+a.hub-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+}
+a.hub-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-color: var(--accent);
+}
+.hub-card .bd {
+  padding: var(--sp-6) var(--sp-5);
+}
+.hub-card-icon {
+  font-size: 28px;
+  line-height: 1;
+  margin-bottom: var(--sp-3);
+}
+.hub-card h2 {
+  font-size: 20px;
+  margin-bottom: var(--sp-1);
+}
+.hub-card .sub {
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* ---------- buttons ---------- */
 .btn {
   display: inline-flex;

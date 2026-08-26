@@ -7,7 +7,7 @@ import { signOutAction } from "@/app/actions/auth";
 import CompanySwitcher from "@/components/CompanySwitcher";
 
 const ADMIN_TABS = [
-  { href: "/admin", label: "Overview" },
+  { href: "/admin/payroll", label: "Overview" },
   { href: "/admin/employees", label: "Employees" },
   { href: "/admin/allowances", label: "Allowances" },
   { href: "/admin/timesheet", label: "Timesheet" },
@@ -16,6 +16,12 @@ const ADMIN_TABS = [
   { href: "/admin/bank", label: "Bank file" },
   { href: "/admin/reports", label: "Reports" },
   { href: "/admin/settings", label: "Settings" },
+];
+
+const BUDGET_TABS = [
+  { href: "/admin/budget", label: "Dashboard" },
+  { href: "/admin/budget/entries", label: "Income & expenses" },
+  { href: "/admin/budget/settings", label: "Categories" },
 ];
 
 const STAFF_TABS = [
@@ -58,9 +64,9 @@ export default async function AppShell({ children, active }: { children: React.R
             </div>
           )}
         </div>
-        {user && (
+        {user && active !== "/admin" && (
           <nav className="tabs container" aria-label="Payroll sections">
-            {(isAdmin ? ADMIN_TABS : STAFF_TABS).map((t) => (
+            {(active?.startsWith("/admin/budget") ? BUDGET_TABS : isAdmin ? ADMIN_TABS : STAFF_TABS).map((t) => (
               <Link key={t.href} href={t.href} className={active === t.href ? "on" : ""}>
                 {t.label}
               </Link>

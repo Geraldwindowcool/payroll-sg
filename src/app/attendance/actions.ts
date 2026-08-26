@@ -121,5 +121,5 @@ export async function saveAttendanceAction(formData: FormData) {
   revalidatePath("/leave");
   revalidatePath("/admin/timesheet");
   revalidatePath("/admin/payrun");
-  revalidatePath("/admin");
+  revalidatePath("/admin/payroll");
 }

@@ -111,7 +111,7 @@ export default async function AdminTimesheetPage({ searchParams }: { searchParam
           <div className="bd">
             <div className="flex items-end gap-4 flex-wrap">
               <EmployeePicker employees={employees} selectedId={selected.id} basePath="/admin/timesheet" ym={ym} />
-              <MonthPicker ym={ym} employeeId={selected.id} basePath="/admin/timesheet" />
+              <MonthPicker ym={ym} extraParams={{ emp: selected.id }} basePath="/admin/timesheet" />
             </div>
           </div>
         </div>
