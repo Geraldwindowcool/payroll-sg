@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Payroll SG",
+  title: "Payroll",
   description: "Singapore payroll — CPF, overtime, leave and bank payout",
 };
 

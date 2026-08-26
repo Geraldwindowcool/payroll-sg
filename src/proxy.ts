@@ -33,5 +33,10 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  // Static assets (logo, icons, etc. under /public) are excluded by
+  // extension so they load for a signed-out visitor too — the login page
+  // itself needs to show the logo before anyone has a session. This was a
+  // latent gap: nothing in /public was actually referenced by a page until
+  // now, so a plain-file request never hit this matcher before.
+  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|gif|ico)$).*)"],
 };

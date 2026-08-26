@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { getCompanies } from "@/lib/payrollService";
 import { getActiveCompany } from "@/lib/activeCompany";
@@ -34,11 +35,9 @@ export default async function AppShell({ children, active }: { children: React.R
       <header style={{ position: "sticky", top: 0, zIndex: 20, borderBottom: "1px solid var(--line)", background: "rgba(255,255,255,0.92)", backdropFilter: "blur(6px)" }}>
         <div className="container flex items-center gap-4 flex-wrap" style={{ paddingTop: 12, paddingBottom: 12 }}>
           <Link href={isAdmin ? "/admin" : "/attendance"} className="flex items-center gap-3" style={{ textDecoration: "none" }}>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold" style={{ background: "var(--ink)", color: "#fff", boxShadow: "var(--shadow-sm)" }}>
-              PS
-            </div>
+            <Image src="/window-cool-logo.png" alt="Window-Cool" width={173} height={34} priority style={{ height: 30, width: "auto" }} />
             <div>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: 17, color: "var(--ink)", lineHeight: 1.15 }}>Payroll SG</div>
+              <div style={{ fontFamily: "var(--font-serif)", fontSize: 17, color: "var(--ink)", lineHeight: 1.15 }}>Payroll</div>
               <div className="hint" style={{ fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" }}>Singapore payroll</div>
             </div>
           </Link>
