@@ -70,6 +70,8 @@ export default function LeaveCalendar({
     .join(",");
 
   const cells: (number | null)[] = [...Array(firstWeekday).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   return (
     <div className="stack">
@@ -81,11 +83,12 @@ export default function LeaveCalendar({
           <button
             key={t.key}
             type="button"
-            className={`btn sm ${activeType === t.key ? "pri" : ""}`}
+            className={`btn sm leave-type-btn${activeType === t.key ? ` active ${t.key}` : ""}`}
             onClick={() => setActiveType(t.key)}
             disabled={disabled}
             aria-pressed={activeType === t.key}
           >
+            <span className={`swatch ${t.key}`} aria-hidden="true" />
             {t.label}
           </button>
         ))}
@@ -101,14 +104,15 @@ export default function LeaveCalendar({
           const key = dateKey(day);
           const mark = marks.get(key);
           const working = isWorkingDay(day);
+          const isToday = key === todayKey;
           return (
             <button
               key={key}
               type="button"
               onClick={() => cycle(day)}
               disabled={disabled || !working}
-              className={`cal-cell${working ? "" : " off"}${mark ? ` on ${mark.type}` : ""}`}
-              title={working ? `${key}${mark ? ` — ${mark.half ? "half day " : ""}${mark.type}` : ""}` : `${key} — not a working day`}
+              className={`cal-cell${working ? "" : " off"}${mark ? ` on ${mark.type}` : ""}${isToday ? " today" : ""}`}
+              title={`${key}${!working ? " — not a working day" : mark ? ` — ${mark.half ? "half day " : ""}${mark.type}` : ""}${isToday ? " (today)" : ""}`}
             >
               <span className="cal-day">{day}</span>
               {mark && <span className="cal-tag">{TYPES.find((t) => t.key === mark.type)?.short}{mark.half ? "½" : ""}</span>}

@@ -96,11 +96,12 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
           <div className="card">
             <div className="hd">
               <h2>{selected.name} — {ym}</h2>
-              <span className="hint">
-                {selected.pattern}-day week · this month: {n2(monthTotals.mc)} MC, {n2(monthTotals.pl)} leave, {n2(monthTotals.ul)} unpaid
-                {" · "}
-                {year}: MC {n2(usedThisYear.mc)}/{selected.mcEntitlement}, leave {n2(usedThisYear.pl)}/{selected.alEntitlement}
-              </span>
+              <div className="mini-stats">
+                <span className="mini-stat"><span className="k">Pattern</span><span className="v">{selected.pattern}-day week</span></span>
+                <span className="mini-stat"><span className="k">This month</span><span className="v">{n2(monthTotals.mc)} MC · {n2(monthTotals.pl)} leave · {n2(monthTotals.ul)} unpaid</span></span>
+                <span className="mini-stat"><span className="k">{year} MC used</span><span className="v">{n2(usedThisYear.mc)} / {selected.mcEntitlement}</span></span>
+                <span className="mini-stat"><span className="k">{year} leave used</span><span className="v">{n2(usedThisYear.pl)} / {selected.alEntitlement}</span></span>
+              </div>
             </div>
             <div className="bd stack">
               <div className="note info">

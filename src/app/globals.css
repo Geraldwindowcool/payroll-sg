@@ -175,7 +175,8 @@ a {
 .card > .hd h2 {
   font-size: 16px;
 }
-.card > .hd .hint {
+.card > .hd .hint,
+.card > .hd .mini-stats {
   flex-basis: 100%;
 }
 
@@ -282,11 +283,11 @@ a {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-label.f {
+.f {
   display: block;
   margin-bottom: 0;
 }
-label.f > span {
+.f > span {
   display: flex;
   align-items: flex-end;
   /* Reserve room for two lines regardless of how long this particular
@@ -625,6 +626,68 @@ nav.tabs a.on {
   .skeleton { animation: none; }
 }
 
+/* ---------- employee picker (joined select + prev/next) ---------- */
+/* One bordered cluster instead of three separately-bordered controls
+   floating next to each other — reads as a single "which employee" input. */
+.picker-group {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: var(--surface);
+}
+.picker-group .inp {
+  border: none;
+  border-radius: 0;
+  min-width: 220px;
+}
+.picker-group .btn {
+  border: none;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  min-height: auto;
+}
+.picker-group .btn:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- mini stats (compact k/v caption row) ---------- */
+/* Same key/value vocabulary as .stats/.stat (Overview KPI tiles), scaled
+   down for a secondary summary line — e.g. "this month: 1.5 MC, 1 leave"
+   under a page heading. Reused on Attendance, Timesheet and Leave pages. */
+.mini-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  /* Gap-only separation, no divider lines — a vertical rule as a flex
+     sibling looks fine on one line but produces an orphaned floating bar
+     the moment the row wraps on a narrow screen, since each wrapped line
+     gets its own cross-size. Same approach as .toggles elsewhere. */
+  row-gap: var(--sp-2);
+  column-gap: var(--sp-5);
+}
+.mini-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+.mini-stat .k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-3);
+}
+.mini-stat .v {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- leave calendar ---------- */
 .cal {
   display: grid;
@@ -702,6 +765,34 @@ nav.tabs a.on {
 .cal-cell.on.PL .cal-tag { background: var(--good); color: #fff; }
 .cal-cell.on.UL { background: var(--bad-soft); border-color: var(--bad-line); }
 .cal-cell.on.UL .cal-tag { background: var(--bad); color: #fff; }
+/* Today — a quiet ring, not a fill, so it reads as "you are here" without
+   competing with a marked leave day's color. */
+.cal-cell.today {
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+.cal-cell.today .cal-day {
+  color: var(--ink);
+}
+
+/* Type-picker buttons on the leave calendar — a color swatch ties each
+   button to the same MC/leave/unpaid color used on the calendar cells and
+   the .pill component elsewhere, so picking a type and seeing it appear
+   on the grid reads as one color language instead of two. */
+.leave-type-btn {
+  gap: 7px;
+}
+.leave-type-btn .swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.leave-type-btn .swatch.MC { background: var(--warn); }
+.leave-type-btn .swatch.PL { background: var(--good); }
+.leave-type-btn .swatch.UL { background: var(--bad); }
+.leave-type-btn.active.MC { background: var(--warn-soft); border-color: var(--warn-line); color: var(--warn); }
+.leave-type-btn.active.PL { background: var(--good-soft); border-color: var(--good-line); color: var(--good); }
+.leave-type-btn.active.UL { background: var(--bad-soft); border-color: var(--bad-line); color: var(--bad); }
 @media (max-width: 560px) {
   .cal-cell { min-height: 44px; padding: 4px; }
   .cal-day { font-size: 11px; }

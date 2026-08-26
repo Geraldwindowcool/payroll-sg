@@ -27,41 +27,41 @@ export default function EmployeePicker({
   const go = (id: string) => startTransition(() => router.push(`${basePath}?ym=${ym}&emp=${id}`));
 
   return (
-    <div className="flex items-end gap-2 flex-wrap">
-      <label className="f" style={{ minWidth: 230 }}>
+    <div className="flex items-end gap-3 flex-wrap">
+      <div className="f">
         <span>Employee</span>
-        <select className="inp" value={selectedId} disabled={isPending} onChange={(e) => go(e.target.value)} aria-label="Employee">
-          {employees.map((e, i) => (
-            <option key={e.id} value={e.id}>
-              {i + 1}. {e.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div className="flex items-center gap-1" style={{ paddingBottom: 1 }}>
-        <button
-          type="button"
-          className="btn sm"
-          disabled={isPending || index <= 0}
-          onClick={() => go(employees[index - 1].id)}
-          aria-label="Previous employee"
-        >
-          ←
-        </button>
-        <button
-          type="button"
-          className="btn sm"
-          disabled={isPending || index < 0 || index >= employees.length - 1}
-          onClick={() => go(employees[index + 1].id)}
-          aria-label="Next employee"
-        >
-          →
-        </button>
-        <span className="hint" style={{ marginLeft: 6 }}>
-          {index >= 0 ? `${index + 1} of ${employees.length}` : `${employees.length} on file`}
-          {isPending ? " · loading…" : ""}
-        </span>
+        <div className="picker-group">
+          <select className="inp" value={selectedId} disabled={isPending} onChange={(e) => go(e.target.value)} aria-label="Employee">
+            {employees.map((e, i) => (
+              <option key={e.id} value={e.id}>
+                {i + 1}. {e.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="btn"
+            disabled={isPending || index <= 0}
+            onClick={() => go(employees[index - 1].id)}
+            aria-label="Previous employee"
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            className="btn"
+            disabled={isPending || index < 0 || index >= employees.length - 1}
+            onClick={() => go(employees[index + 1].id)}
+            aria-label="Next employee"
+          >
+            →
+          </button>
+        </div>
       </div>
+      <span className="hint" style={{ paddingBottom: 10 }}>
+        {index >= 0 ? `${index + 1} of ${employees.length}` : `${employees.length} on file`}
+        {isPending ? " · loading…" : ""}
+      </span>
     </div>
   );
 }
