@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Payroll",
-  description: "Singapore payroll — CPF, overtime, leave and bank payout",
+  title: "Hub",
+  description: "Window-Cool's payroll, budget and company hub — CPF, overtime, leave, bank payout and cashflow",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
