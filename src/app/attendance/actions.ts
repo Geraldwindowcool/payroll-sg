@@ -6,7 +6,10 @@ import { timesheetWeeks, employees } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { requireUser, allowedEmployeeIds } from "@/lib/access";
 import { weeksOfMonth } from "@/lib/payroll";
-import { parseLeaveDaysField, replaceLeaveDaysForMonth } from "@/lib/saveLeaveDays";
+import {
+  parseLeaveDaysField,
+  replaceLeaveDaysForMonth,
+} from "@/lib/saveLeaveDays";
 
 function numOrZero(v: FormDataEntryValue | null): number {
   const n = parseFloat(String(v ?? ""));
@@ -41,46 +44,78 @@ export async function saveAttendanceAction(formData: FormData) {
   // The work pattern decides what a marked date is worth (a Saturday is
   // half a day on a 5.5-day week, nothing on a 5-day one), so read it from
   // the employee record rather than trusting anything posted.
-  const [emp] = await db.select().from(employees).where(and(eq(employees.id, employeeId), eq(employees.companyId, companyId))).limit(1);
+  const [emp] = await db
+    .select()
+    .from(employees)
+    .where(
+      and(eq(employees.id, employeeId), eq(employees.companyId, companyId)),
+    )
+    .limit(1);
   if (!emp) return;
 
-  const entries = parseLeaveDaysField(String(formData.get("leaveDays") || ""), ym);
-  await replaceLeaveDaysForMonth({ companyId, employeeId, ym, pattern: emp.pattern, entries, userId: user.id });
+  const entries = parseLeaveDaysField(
+    String(formData.get("leaveDays") || ""),
+    ym,
+  );
+  await replaceLeaveDaysForMonth({
+    companyId,
+    employeeId,
+    ym,
+    pattern: emp.pattern,
+    entries,
+    userId: user.id,
+  });
 
   // Then the per-week hours. mc/pl/ul are deliberately NOT written here —
   // replaceLeaveDaysForMonth already set them from the calendar, and
   // writing them again from the form would undo that.
-  for (const w of weeksOfMonth(ym)) {
-    const allowanceQty: Record<string, number> = {};
-    for (const allowanceId of allowanceIds) {
-      const q = numOrZero(formData.get(`qty_${w.i}_${allowanceId}`));
-      if (q) allowanceQty[allowanceId] = q;
-    }
+  //
+  // One read for every week's row up front, then every week's write fires
+  // together — the previous version read-then-wrote one week at a time,
+  // which meant each week sat in a queue waiting for the one before it to
+  // finish its own round trip to the database.
+  const weeks = weeksOfMonth(ym);
+  const existingRows = await db
+    .select({ id: timesheetWeeks.id, weekIndex: timesheetWeeks.weekIndex })
+    .from(timesheetWeeks)
+    .where(
+      and(eq(timesheetWeeks.employeeId, employeeId), eq(timesheetWeeks.ym, ym)),
+    );
+  const existingByWeek = new Map(existingRows.map((r) => [r.weekIndex, r.id]));
 
-    const patch = {
-      days: numOrNull(formData.get(`days_${w.i}`)),
-      ot: numOrZero(formData.get(`ot_${w.i}`)),
-      xot: numOrZero(formData.get(`xot_${w.i}`)),
-      rdS: numOrZero(formData.get(`rdS_${w.i}`)),
-      rdF: numOrZero(formData.get(`rdF_${w.i}`)),
-      ph: numOrZero(formData.get(`ph_${w.i}`)),
-      allowanceQty,
-      updatedByUserId: user.id,
-      updatedAt: new Date(),
-    };
+  await Promise.all(
+    weeks.map((w) => {
+      const allowanceQty: Record<string, number> = {};
+      for (const allowanceId of allowanceIds) {
+        const q = numOrZero(formData.get(`qty_${w.i}_${allowanceId}`));
+        if (q) allowanceQty[allowanceId] = q;
+      }
 
-    const existing = await db
-      .select({ id: timesheetWeeks.id })
-      .from(timesheetWeeks)
-      .where(and(eq(timesheetWeeks.employeeId, employeeId), eq(timesheetWeeks.ym, ym), eq(timesheetWeeks.weekIndex, w.i)))
-      .limit(1);
+      const patch = {
+        days: numOrNull(formData.get(`days_${w.i}`)),
+        ot: numOrZero(formData.get(`ot_${w.i}`)),
+        xot: numOrZero(formData.get(`xot_${w.i}`)),
+        rdS: numOrZero(formData.get(`rdS_${w.i}`)),
+        rdF: numOrZero(formData.get(`rdF_${w.i}`)),
+        ph: numOrZero(formData.get(`ph_${w.i}`)),
+        allowanceQty,
+        updatedByUserId: user.id,
+        updatedAt: new Date(),
+      };
 
-    if (existing.length) {
-      await db.update(timesheetWeeks).set(patch).where(eq(timesheetWeeks.id, existing[0].id));
-    } else {
-      await db.insert(timesheetWeeks).values({ companyId, employeeId, ym, weekIndex: w.i, ...patch });
-    }
-  }
+      const existingId = existingByWeek.get(w.i);
+      if (existingId) {
+        return db
+          .update(timesheetWeeks)
+          .set(patch)
+          .where(eq(timesheetWeeks.id, existingId));
+      } else {
+        return db
+          .insert(timesheetWeeks)
+          .values({ companyId, employeeId, ym, weekIndex: w.i, ...patch });
+      }
+    }),
+  );
 
   revalidatePath("/attendance");
   revalidatePath("/leave");

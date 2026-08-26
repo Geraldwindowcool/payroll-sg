@@ -2,7 +2,11 @@ import "server-only";
 import { db } from "@/db";
 import { leaveDays, timesheetWeeks } from "@/db/schema";
 import { and, eq, like } from "drizzle-orm";
-import { deriveWeekLeaveTotals, type LeaveDayEntry, type LeaveType } from "@/lib/leave";
+import {
+  deriveWeekLeaveTotals,
+  type LeaveDayEntry,
+  type LeaveType,
+} from "@/lib/leave";
 import { weeksOfMonth } from "@/lib/payroll";
 
 const VALID_TYPES: LeaveType[] = ["MC", "PL", "UL"];
@@ -46,34 +50,80 @@ export async function replaceLeaveDaysForMonth(opts: {
 }) {
   const { companyId, employeeId, ym, pattern, entries, userId } = opts;
 
-  await db.delete(leaveDays).where(and(eq(leaveDays.employeeId, employeeId), like(leaveDays.date, `${ym}-%`)));
-  if (entries.length) {
-    await db.insert(leaveDays).values(
-      entries.map((e) => ({ companyId, employeeId, date: e.date, type: e.type, half: e.half, updatedByUserId: userId ?? null }))
+  // The delete+insert pair below is naturally sequential (can't insert the
+  // new dates until the old ones for this month are gone, or the unique
+  // index on employeeId+date could collide with a date being moved between
+  // types) — but everything after it does NOT depend on network latency
+  // stacking up per week. One round trip to see what already exists, then
+  // every week's write fires at once instead of waiting in a queue behind
+  // the one before it.
+  await db
+    .delete(leaveDays)
+    .where(
+      and(
+        eq(leaveDays.employeeId, employeeId),
+        like(leaveDays.date, `${ym}-%`),
+      ),
     );
+  if (entries.length) {
+    await db
+      .insert(leaveDays)
+      .values(
+        entries.map((e) => ({
+          companyId,
+          employeeId,
+          date: e.date,
+          type: e.type,
+          half: e.half,
+          updatedByUserId: userId ?? null,
+        })),
+      );
   }
 
   const totals = deriveWeekLeaveTotals(ym, entries, pattern);
   const weeks = weeksOfMonth(ym);
 
-  for (let i = 0; i < weeks.length; i++) {
-    const weekIndex = weeks[i].i;
-    const { mc, pl, ul } = totals[i];
-    const existing = await db
-      .select({ id: timesheetWeeks.id })
-      .from(timesheetWeeks)
-      .where(and(eq(timesheetWeeks.employeeId, employeeId), eq(timesheetWeeks.ym, ym), eq(timesheetWeeks.weekIndex, weekIndex)))
-      .limit(1);
+  const existingRows = await db
+    .select({ id: timesheetWeeks.id, weekIndex: timesheetWeeks.weekIndex })
+    .from(timesheetWeeks)
+    .where(
+      and(eq(timesheetWeeks.employeeId, employeeId), eq(timesheetWeeks.ym, ym)),
+    );
+  const existingByWeek = new Map(existingRows.map((r) => [r.weekIndex, r.id]));
 
-    if (existing.length) {
-      await db
-        .update(timesheetWeeks)
-        .set({ mc, pl, ul, updatedByUserId: userId ?? null, updatedAt: new Date() })
-        .where(eq(timesheetWeeks.id, existing[0].id));
-    } else if (mc || pl || ul) {
-      // Only create a row when there's actually leave to record — no point
-      // filling the table with empty weeks for every month anyone views.
-      await db.insert(timesheetWeeks).values({ companyId, employeeId, ym, weekIndex, mc, pl, ul, updatedByUserId: userId ?? null });
-    }
-  }
+  await Promise.all(
+    weeks.map((w, i) => {
+      const { mc, pl, ul } = totals[i];
+      const existingId = existingByWeek.get(w.i);
+      if (existingId) {
+        return db
+          .update(timesheetWeeks)
+          .set({
+            mc,
+            pl,
+            ul,
+            updatedByUserId: userId ?? null,
+            updatedAt: new Date(),
+          })
+          .where(eq(timesheetWeeks.id, existingId));
+      }
+      if (mc || pl || ul) {
+        // Only create a row when there's actually leave to record — no point
+        // filling the table with empty weeks for every month anyone views.
+        return db
+          .insert(timesheetWeeks)
+          .values({
+            companyId,
+            employeeId,
+            ym,
+            weekIndex: w.i,
+            mc,
+            pl,
+            ul,
+            updatedByUserId: userId ?? null,
+          });
+      }
+      return Promise.resolve();
+    }),
+  );
 }
