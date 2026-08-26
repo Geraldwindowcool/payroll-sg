@@ -18,7 +18,10 @@ export default function CreateUserForm({ action }: { action: (formData: FormData
           <option value="STAFF">Staff — can only key in MC/leave</option>
           <option value="ADMIN">Administrator — full payroll access</option>
         </select>
-        <button className="btn pri" type="submit" disabled={pending}>{pending ? "Creating…" : "Create login"}</button>
+        <button className="btn pri" type="submit" disabled={pending} aria-busy={pending}>
+          {pending && <span className="spinner" aria-hidden="true" />}
+          {pending ? "Creating…" : "Create login"}
+        </button>
       </div>
       {state.error && <div className="note bad">{state.error}</div>}
     </form>

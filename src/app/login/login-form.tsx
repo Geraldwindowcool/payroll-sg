@@ -18,7 +18,8 @@ export default function LoginForm({ from }: { from?: string }) {
         <input className="inp" type="password" name="password" required autoComplete="current-password" />
       </label>
       {state?.error && <div className="note bad">{state.error}</div>}
-      <button className="btn pri" type="submit" disabled={pending} style={{ width: "100%", justifyContent: "center" }}>
+      <button className="btn pri" type="submit" disabled={pending} aria-busy={pending} style={{ width: "100%", justifyContent: "center" }}>
+        {pending && <span className="spinner" aria-hidden="true" />}
         {pending ? "Signing in…" : "Sign in"}
       </button>
     </form>

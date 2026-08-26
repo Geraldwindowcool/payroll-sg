@@ -1,4 +1,5 @@
 import AppShell from "@/components/AppShell";
+import SubmitButton from "@/components/SubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getEmployee, getAllowances, getLevies, getEmployeeAllowanceLinks } from "@/lib/payrollService";
@@ -105,7 +106,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
               </div>
 
               <div>
-                <button className="btn pri" type="submit">Save changes</button>
+                <SubmitButton>Save changes</SubmitButton>
               </div>
             </form>
           </div>
@@ -142,7 +143,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
                   </table>
                 </div>
                 <div>
-                  <button className="btn pri" type="submit">Save allowances</button>
+                  <SubmitButton>Save allowances</SubmitButton>
                 </div>
               </form>
             )}
@@ -155,7 +156,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
             <p className="hint">Deleting permanently erases this employee&apos;s timesheets and pay history. Untick &quot;Active&quot; above instead if you just want to stop paying them.</p>
             <form action={deleteEmployeeAction}>
               <input type="hidden" name="id" value={emp.id} />
-              <button className="btn danger" type="submit">Delete employee permanently</button>
+              <SubmitButton className="btn danger" pendingText="Deleting…">Delete employee permanently</SubmitButton>
             </form>
           </div>
         </div>

@@ -1,5 +1,7 @@
 import { Fragment } from "react";
 import AppShell from "@/components/AppShell";
+import SubmitButton from "@/components/SubmitButton";
+import RowSaveButton from "@/components/RowSaveButton";
 import { getActiveCompany } from "@/lib/activeCompany";
 import { getCompanies, getLevies, getEmployees } from "@/lib/payrollService";
 import { getUsers, getEmployeeAccessByUser } from "@/lib/usersService";
@@ -24,7 +26,7 @@ export default async function SettingsPage() {
           <div className="bd">
             <form action={addCompanyAction} className="flex items-center gap-2">
               <input className="inp" name="name" placeholder="Company name" required style={{ maxWidth: 300 }} />
-              <button className="btn pri" type="submit">Add</button>
+              <SubmitButton>Add</SubmitButton>
             </form>
           </div>
         </div>
@@ -69,7 +71,7 @@ export default async function SettingsPage() {
                 <label className="chk"><input type="checkbox" name="sdlEnabled" defaultChecked={company.sdlEnabled} /> SDL enabled</label>
                 <label className="chk"><input type="checkbox" name="roundNet" defaultChecked={company.roundNet} /> Round net pay down to nearest 5 cents</label>
               </div>
-              <div><button className="btn pri" type="submit">Save company details</button></div>
+              <div><SubmitButton>Save company details</SubmitButton></div>
             </form>
           </div>
         </div>
@@ -108,7 +110,7 @@ export default async function SettingsPage() {
                 </table>
               </div>
               <div className="hint">Each pair is Total % / Employee %.</div>
-              <div><button className="btn pri" type="submit">Save CPF rates</button></div>
+              <div><SubmitButton>Save CPF rates</SubmitButton></div>
             </form>
           </div>
         </div>
@@ -121,8 +123,8 @@ export default async function SettingsPage() {
                 <input type="hidden" name="id" value={l.id} />
                 <input className="inp" name="label" defaultValue={l.label} style={{ maxWidth: 220 }} />
                 <input className="inp num" type="number" step="0.01" name="amt" defaultValue={l.amt} style={{ maxWidth: 120 }} />
-                <button className="btn sm" type="submit">Save</button>
-                <button className="btn sm danger" type="submit" formAction={deleteLevyAction}>Delete</button>
+                <SubmitButton className="btn sm" action={updateLevyAction}>Save</SubmitButton>
+                <SubmitButton className="btn sm danger" action={deleteLevyAction} pendingText="Deleting…">Delete</SubmitButton>
               </form>
             ))}
             {!levies.length && <div className="empty">No levy tiers yet — add one below.</div>}
@@ -130,7 +132,7 @@ export default async function SettingsPage() {
               <input type="hidden" name="companyId" value={company.id} />
               <input className="inp" name="label" placeholder="e.g. R1 tier" required style={{ maxWidth: 220 }} />
               <input className="inp num" type="number" step="0.01" name="amt" placeholder="Amount" required style={{ maxWidth: 120 }} />
-              <button className="btn pri" type="submit">Add tier</button>
+              <SubmitButton>Add tier</SubmitButton>
             </form>
           </div>
         </div>
@@ -147,7 +149,7 @@ export default async function SettingsPage() {
                       {companies.length > 1 && (
                         <form action={deleteCompanyAction} style={{ display: "inline" }}>
                           <input type="hidden" name="companyId" value={c.id} />
-                          <button className="btn sm danger" type="submit">Remove</button>
+                          <SubmitButton className="btn sm danger" pendingText="Removing…">Remove</SubmitButton>
                         </form>
                       )}
                     </td>
@@ -157,7 +159,7 @@ export default async function SettingsPage() {
             </table>
             <form action={addCompanyAction} className="flex items-center gap-2" style={{ marginTop: 14 }}>
               <input className="inp" name="name" placeholder="New company name" required style={{ maxWidth: 260 }} />
-              <button className="btn" type="submit">Add company</button>
+              <SubmitButton className="btn">Add company</SubmitButton>
             </form>
           </div>
         </div>
@@ -189,7 +191,7 @@ export default async function SettingsPage() {
                       <td><label className="chk"><input type="checkbox" name="active" form={`user-${u.id}`} defaultChecked={u.active} /> Active</label></td>
                       <td className="flex items-center gap-2">
                         <input className="inp" type="password" name="password" form={`user-${u.id}`} placeholder="new password" style={{ maxWidth: 130 }} />
-                        <button className="btn sm" type="submit" form={`user-${u.id}`}>Save</button>
+                        <RowSaveButton formId={`user-${u.id}`} action={updateUserAction}>Save</RowSaveButton>
                       </td>
                     </tr>
                   ))}
@@ -229,7 +231,7 @@ export default async function SettingsPage() {
                                 ))}
                               </div>
                               <div>
-                                <button className="btn sm pri" type="submit">Save access for {u.name}</button>
+                                <SubmitButton className="btn sm pri">Save access for {u.name}</SubmitButton>
                               </div>
                             </form>
                           </div>

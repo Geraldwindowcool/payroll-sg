@@ -1,4 +1,5 @@
 import AppShell from "@/components/AppShell";
+import SubmitButton from "@/components/SubmitButton";
 import Link from "next/link";
 import { getActiveCompany } from "@/lib/activeCompany";
 import { getEmployees, getLeaveUsageForYear } from "@/lib/payrollService";
@@ -112,7 +113,7 @@ export default async function EmployeesPage() {
               </div>
 
               <div>
-                <button className="btn pri" type="submit">Add employee</button>
+                <SubmitButton>Add employee</SubmitButton>
               </div>
             </form>
           </div>

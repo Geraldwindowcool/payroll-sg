@@ -1,4 +1,5 @@
 import AppShell from "@/components/AppShell";
+import SubmitButton from "@/components/SubmitButton";
 import { getActiveCompany } from "@/lib/activeCompany";
 import { getAllowances } from "@/lib/payrollService";
 import { createAllowanceAction, updateAllowanceAction, deleteAllowanceAction } from "@/app/actions/allowances";
@@ -44,8 +45,8 @@ export default async function AllowancesPage() {
                     <label className="chk" style={{ alignSelf: "end", height: 38 }}><input type="checkbox" name="cpfPayable" defaultChecked={a.cpfPayable} /> CPF-payable</label>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button className="btn sm" type="submit">Save</button>
-                    <button className="btn sm danger" type="submit" formAction={deleteAllowanceAction}>Delete</button>
+                    <SubmitButton className="btn sm" action={updateAllowanceAction}>Save</SubmitButton>
+                    <SubmitButton className="btn sm danger" action={deleteAllowanceAction} pendingText="Deleting…">Delete</SubmitButton>
                   </div>
                 </form>
               ))}
@@ -69,7 +70,7 @@ export default async function AllowancesPage() {
               </label>
               <label className="f"><span>Rate ($)</span><input className="inp num" type="number" step="0.01" name="rate" required /></label>
               <label className="chk" style={{ height: 40 }}><input type="checkbox" name="cpfPayable" defaultChecked /> CPF-payable</label>
-              <button className="btn pri" type="submit">Add</button>
+              <SubmitButton>Add</SubmitButton>
             </form>
           </div>
         </div>
