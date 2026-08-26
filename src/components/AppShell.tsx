@@ -64,7 +64,7 @@ export default async function AppShell({ children, active }: { children: React.R
             </div>
           )}
         </div>
-        {user && active !== "/admin" && (
+        {user && active !== "/admin" && active !== "/admin/companies" && (
           <nav className="tabs container" aria-label="Payroll sections">
             {(active?.startsWith("/admin/budget") ? BUDGET_TABS : isAdmin ? ADMIN_TABS : STAFF_TABS).map((t) => (
               <Link key={t.href} href={t.href} className={active === t.href ? "on" : ""}>

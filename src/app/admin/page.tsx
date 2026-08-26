@@ -33,6 +33,13 @@ export default async function AdminHub() {
             <div className="sub">Income, expenses and cashflow for the whole business.</div>
           </div>
         </Link>
+        <Link href="/admin/companies" className="card hub-card">
+          <div className="bd">
+            <div className="hub-card-icon" aria-hidden="true">🏢</div>
+            <h2>All companies</h2>
+            <div className="sub">Combined payroll and budget performance across every company.</div>
+          </div>
+        </Link>
       </div>
     </AppShell>
   );
