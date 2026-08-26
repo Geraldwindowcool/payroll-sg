@@ -2,7 +2,7 @@ import AppShell from "@/components/AppShell";
 import { getActiveCompany } from "@/lib/activeCompany";
 import { getBudgetCategories, getBudgetSummaryForMonth, getBudgetSummaryForYear } from "@/lib/budgetService";
 import { getXeroConnection } from "@/lib/xero";
-import { getEmployees } from "@/lib/payrollService";
+import { getEmployees, getMonthPayroll } from "@/lib/payrollService";
 import { getCashAdjustmentsForMonth } from "@/lib/payrollCashAdjustmentsService";
 import { summarizeCashAdjustments, PAYROLL_CASH_ADJUSTMENT_REASON_LABELS } from "@/lib/payrollCashAdjustments";
 import { money, money0 } from "@/lib/payroll";
@@ -65,19 +65,28 @@ export default async function BudgetDashboard({ searchParams }: { searchParams: 
 
   const ym = thisMonth();
   const year = Number(sp.year) || new Date().getFullYear();
-  const [summary, yearTotals, xeroConnection, employees, cashAdjustments] = await Promise.all([
+  const [summary, yearTotals, xeroConnection, employees, cashAdjustments, payrollRows] = await Promise.all([
     getBudgetSummaryForMonth(company.id, ym),
     getBudgetSummaryForYear(company.id, year),
     getXeroConnection(company.id),
     getEmployees(company.id),
     getCashAdjustmentsForMonth(company.id, ym),
+    getMonthPayroll(company.id, ym),
   ]);
 
   const payrollCategory = summary.categories.find((c) => c.isSystem);
   const payrollCost = payrollCategory?.actual ?? 0;
   const otherExpense = summary.expense - payrollCost;
   const yearTotal = yearTotals.reduce((s, m) => ({ income: s.income + m.income, expense: s.expense + m.expense, net: s.net + m.net }), { income: 0, expense: 0, net: 0 });
-  const cashSummary = summarizeCashAdjustments(payrollCost, cashAdjustments);
+  // Employee-pay deductions (the generic "Deduction" field on Timesheet's
+  // monthly items) represent money the company recovers and keeps, rather
+  // than money that passes through to a third party — so unlike CPF or
+  // CDAC, they genuinely lower the company's real cash outflow below the
+  // accrued payroll cost. Folded in automatically here, on top of any
+  // manually-logged cash adjustments, so keying in a deduction is
+  // reflected in "true cash" without a separate manual step.
+  const totalDeductions = payrollRows.reduce((s, r) => s + (r.ded || 0), 0);
+  const cashSummary = summarizeCashAdjustments(payrollCost, totalDeductions > 0 ? [...cashAdjustments, { amount: totalDeductions }] : cashAdjustments);
   const trueNetCashflow = summary.net + cashSummary.totalAdjustment;
   const employeeName = (id: string | null) => (id ? employees.find((e) => e.id === id)?.name ?? "(former employee)" : null);
   // The system Payroll category is excluded — its actual always comes
@@ -140,11 +149,16 @@ export default async function BudgetDashboard({ searchParams }: { searchParams: 
           <Stat k="Income this month" v={money0(summary.income)} m={ym} />
           <Stat k="Payroll cost this month" v={money0(payrollCost)} m="live from payroll" />
           <Stat k="Other expenses this month" v={money0(otherExpense)} m="excl. payroll" />
-          {cashAdjustments.length > 0 && (
+          {(cashAdjustments.length > 0 || totalDeductions > 0) && (
             <div className="stat">
               <div className="k">True cash net cashflow</div>
               <div className="v" style={{ color: trueNetCashflow >= 0 ? "var(--good)" : "var(--bad)" }}>{money0(trueNetCashflow)}</div>
-              <div className="m">after {cashAdjustments.length} cash adjustment{cashAdjustments.length === 1 ? "" : "s"}</div>
+              <div className="m">
+                {[
+                  totalDeductions > 0 ? `${money(totalDeductions)} deductions retained` : null,
+                  cashAdjustments.length > 0 ? `${cashAdjustments.length} cash adjustment${cashAdjustments.length === 1 ? "" : "s"}` : null,
+                ].filter(Boolean).join(" + ")}
+              </div>
             </div>
           )}
         </div>
@@ -201,6 +215,11 @@ export default async function BudgetDashboard({ searchParams }: { searchParams: 
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {totalDeductions > 0 && (
+              <div className="hint">
+                Includes {money(totalDeductions)} in employee-pay deductions this month, counted automatically — no need to log those here separately.
               </div>
             )}
             {cashSummary.totalAdjustment !== 0 && (
