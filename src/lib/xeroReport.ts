@@ -22,11 +22,25 @@ export interface XeroReportResponse {
   Reports?: { Rows?: XeroReportRow[] }[];
 }
 
-export function parseTotalIncome(report: XeroReportResponse): number {
-  const sections = report.Reports?.[0]?.Rows ?? [];
-  const incomeSection = sections.find((r) => r.RowType === "Section" && /income/i.test(r.Title ?? ""));
-  const totalRow = incomeSection?.Rows?.find((r) => r.RowType === "SummaryRow");
+function sectionTotal(section: XeroReportRow | undefined): number {
+  const totalRow = section?.Rows?.find((r) => r.RowType === "SummaryRow");
   const valueCell = totalRow?.Cells?.[totalRow.Cells.length - 1]?.Value;
   const n = Number(valueCell);
   return Number.isFinite(n) ? n : 0;
+}
+
+export function parseTotalIncome(report: XeroReportResponse): number {
+  const sections = report.Reports?.[0]?.Rows ?? [];
+  const incomeSection = sections.find((r) => r.RowType === "Section" && /income/i.test(r.Title ?? "") && !/other income/i.test(r.Title ?? ""));
+  return sectionTotal(incomeSection);
+}
+
+/** Expenses live in (at least) two sections Xero doesn't guarantee the
+ *  naming of exactly — "Cost of Sales" and "Operating Expenses" are the
+ *  common titles, sometimes prefixed "Less " — so this sums every section
+ *  whose title looks like either, rather than a single named section. */
+export function parseTotalExpenses(report: XeroReportResponse): number {
+  const sections = report.Reports?.[0]?.Rows ?? [];
+  const expenseSections = sections.filter((r) => r.RowType === "Section" && /cost of sales|expenses/i.test(r.Title ?? ""));
+  return expenseSections.reduce((sum, section) => sum + sectionTotal(section), 0);
 }

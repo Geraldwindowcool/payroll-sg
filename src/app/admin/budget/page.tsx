@@ -71,7 +71,11 @@ export default async function BudgetDashboard({ searchParams }: { searchParams: 
   const payrollCost = payrollCategory?.actual ?? 0;
   const otherExpense = summary.expense - payrollCost;
   const yearTotal = yearTotals.reduce((s, m) => ({ income: s.income + m.income, expense: s.expense + m.expense, net: s.net + m.net }), { income: 0, expense: 0, net: 0 });
-  const incomeCategories = categories.filter((c) => c.type === "INCOME");
+  // The system Payroll category is excluded — its actual always comes
+  // live from real payroll data, never from a generic Xero total.
+  const syncableCategories = categories.filter((c) => !c.isSystem);
+  const syncableIncome = syncableCategories.filter((c) => c.type === "INCOME");
+  const syncableExpense = syncableCategories.filter((c) => c.type === "EXPENSE");
 
   return (
     <AppShell active="/admin/budget">
@@ -83,27 +87,36 @@ export default async function BudgetDashboard({ searchParams }: { searchParams: 
       </div>
 
       <div className="stack-lg">
-        {sp.xeroSynced && <div className="note good">Synced {money(Number(sp.xeroSynced))} of revenue from Xero into {ym}.</div>}
+        {sp.xeroSynced && <div className="note good">Synced {money(Number(sp.xeroSynced))} from Xero into {ym}.</div>}
         {sp.xeroError && <div className="note bad">Xero: {sp.xeroError}</div>}
 
         <div className="card">
-          <div className="hd"><h2>Sync revenue from Xero</h2></div>
+          <div className="hd"><h2>Sync from Xero</h2></div>
           <div className="bd">
             {!xeroConnection ? (
               <div className="note warn">Not connected to Xero yet — <Link href="/admin/settings">connect it in Settings</Link> to enable this.</div>
-            ) : !incomeCategories.length ? (
-              <div className="note warn">No income category to sync into yet — add one in Categories.</div>
+            ) : !syncableCategories.length ? (
+              <div className="note warn">No category to sync into yet — add one in Categories.</div>
             ) : (
               <form action={refreshRevenueFromXeroAction} className="flex items-end gap-3 flex-wrap">
                 <input type="hidden" name="companyId" value={company.id} />
                 <input type="hidden" name="ym" value={ym} />
                 <label className="f" style={{ maxWidth: 260 }}>
                   <span>Into category</span>
-                  <select className="inp" name="categoryId" defaultValue={incomeCategories[0].id}>
-                    {incomeCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  <select className="inp" name="categoryId" defaultValue={syncableCategories[0].id}>
+                    {syncableIncome.length > 0 && (
+                      <optgroup label="Income (pulls Xero total income)">
+                        {syncableIncome.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </optgroup>
+                    )}
+                    {syncableExpense.length > 0 && (
+                      <optgroup label="Expenses (pulls Xero total expenses)">
+                        {syncableExpense.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </optgroup>
+                    )}
                   </select>
                 </label>
-                <SubmitButton pendingText="Syncing…">Refresh from Xero — {xeroConnection.tenantName}</SubmitButton>
+                <SubmitButton pendingText="Syncing…">Sync from Xero — {xeroConnection.tenantName}</SubmitButton>
               </form>
             )}
           </div>

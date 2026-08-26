@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseTotalIncome, type XeroReportResponse } from "./xeroReport";
+import { parseTotalIncome, parseTotalExpenses, type XeroReportResponse } from "./xeroReport";
 
 // Shaped like a real Xero ProfitAndLoss report response (Reports API v2.0).
 // The Income section's numbers here match a real pull from Window-Cool's
@@ -72,5 +72,42 @@ describe("parseTotalIncome — reading Xero's raw P&L report shape", () => {
   it("finds Income even when it isn't the first section", () => {
     const shuffled: XeroReportResponse = { Reports: [{ Rows: [REALISTIC_REPORT.Reports![0].Rows![3], REALISTIC_REPORT.Reports![0].Rows![1]] }] };
     expect(parseTotalIncome(shuffled)).toBe(80749.1);
+  });
+});
+
+describe("parseTotalExpenses — summing Cost of Sales + Operating Expenses", () => {
+  it("adds Cost of Sales and Operating Expenses together", () => {
+    // 14340.19 + 11339.84, matching the real Aug 2026 pull used to
+    // sanity-check this parser during development.
+    expect(parseTotalExpenses(REALISTIC_REPORT)).toBeCloseTo(25680.03, 2);
+  });
+
+  it("is not fooled by Gross Profit or Net Profit, even though both are computed from expenses", () => {
+    const total = parseTotalExpenses(REALISTIC_REPORT);
+    expect(total).not.toBe(66408.91);
+    expect(total).not.toBe(55069.07);
+  });
+
+  it("still works when an org has no Cost of Sales section at all (service business, no COGS)", () => {
+    const noCogs: XeroReportResponse = {
+      Reports: [
+        {
+          Rows: [
+            { RowType: "Section", Title: "Income", Rows: [{ RowType: "SummaryRow", Cells: [{ Value: "Total Income" }, { Value: "10000.00" }] }] },
+            { RowType: "Section", Title: "Less Operating Expenses", Rows: [{ RowType: "SummaryRow", Cells: [{ Value: "Total Operating Expenses" }, { Value: "4000.00" }] }] },
+            { RowType: "Section", Title: "Net Profit", Rows: [{ RowType: "SummaryRow", Cells: [{ Value: "Net Profit" }, { Value: "6000.00" }] }] },
+          ],
+        },
+      ],
+    };
+    expect(parseTotalExpenses(noCogs)).toBe(4000);
+  });
+
+  it("returns 0 for a report with no expense sections", () => {
+    expect(parseTotalExpenses({ Reports: [{ Rows: [] }] })).toBe(0);
+  });
+
+  it("returns 0 for a completely empty/malformed response", () => {
+    expect(parseTotalExpenses({})).toBe(0);
   });
 });

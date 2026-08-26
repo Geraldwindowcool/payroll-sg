@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/db";
 import { xeroConnections, type XeroConnection } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { parseTotalIncome, type XeroReportResponse } from "@/lib/xeroReport";
+import { parseTotalIncome, parseTotalExpenses, type XeroReportResponse } from "@/lib/xeroReport";
 
 const XERO_AUTHORIZE_URL = "https://login.xero.com/identity/connect/authorize";
 const XERO_TOKEN_URL = "https://identity.xero.com/connect/token";
@@ -147,10 +147,11 @@ async function ensureFreshToken(conn: XeroConnection): Promise<XeroConnection> {
   return updated;
 }
 
-/** Total revenue for a date range, pulled live from the company's
- *  connected Xero organisation's Profit & Loss report (accrual basis,
- *  matching how Xero itself reports revenue). */
-export async function getXeroRevenueForRange(companyId: string, startDate: string, endDate: string): Promise<{ revenue: number; tenantName: string }> {
+/** Income and expenses for a date range, both pulled from one fetch of the
+ *  company's connected Xero organisation's Profit & Loss report (accrual
+ *  basis, matching how Xero itself reports these) — one report call
+ *  already contains both figures, so there's no reason to ask Xero twice. */
+export async function getXeroFinancialsForRange(companyId: string, startDate: string, endDate: string): Promise<{ income: number; expenses: number; tenantName: string }> {
   const conn = await getXeroConnection(companyId);
   if (!conn) throw new Error("This company isn't connected to Xero yet — connect it in Settings first.");
   const fresh = await ensureFreshToken(conn);
@@ -165,5 +166,5 @@ export async function getXeroRevenueForRange(companyId: string, startDate: strin
   if (!res.ok) throw new Error(`Xero's report request failed (${res.status}).`);
   const report: XeroReportResponse = await res.json();
 
-  return { revenue: parseTotalIncome(report), tenantName: fresh.tenantName };
+  return { income: parseTotalIncome(report), expenses: parseTotalExpenses(report), tenantName: fresh.tenantName };
 }
