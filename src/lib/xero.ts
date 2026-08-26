@@ -6,6 +6,7 @@ import { parseTotalIncome, type XeroReportResponse } from "@/lib/xeroReport";
 
 const XERO_AUTHORIZE_URL = "https://login.xero.com/identity/connect/authorize";
 const XERO_TOKEN_URL = "https://identity.xero.com/connect/token";
+const XERO_REVOKE_URL = "https://identity.xero.com/connect/revocation";
 const XERO_CONNECTIONS_URL = "https://api.xero.com/connections";
 const XERO_PNL_REPORT_URL = "https://api.xero.com/api.xro/2.0/Reports/ProfitAndLoss";
 
@@ -104,7 +105,28 @@ export async function getXeroConnection(companyId: string): Promise<XeroConnecti
   return row ?? null;
 }
 
+/** Tells Xero to revoke this specific grant — otherwise "Disconnect" here
+ *  only forgets our own copy of the tokens while Xero's own Connected
+ *  Apps list keeps showing the app as authorized, which reads as broken
+ *  even though nothing here can call Xero with them anymore. Best-effort:
+ *  if Xero's revoke call fails (already revoked, network hiccup), we
+ *  still remove our stored connection below so the app itself is always
+ *  left in a clean "not connected" state either way. */
+async function revokeXeroToken(refreshToken: string): Promise<void> {
+  try {
+    await fetch(XERO_REVOKE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Authorization: basicAuthHeader() },
+      body: new URLSearchParams({ token: refreshToken }),
+    });
+  } catch {
+    // Swallow — see comment above.
+  }
+}
+
 export async function disconnectXero(companyId: string) {
+  const [conn] = await db.select().from(xeroConnections).where(eq(xeroConnections.companyId, companyId)).limit(1);
+  if (conn) await revokeXeroToken(conn.refreshToken);
   await db.delete(xeroConnections).where(eq(xeroConnections.companyId, companyId));
 }
 
