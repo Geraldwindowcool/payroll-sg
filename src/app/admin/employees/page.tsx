@@ -15,6 +15,16 @@ function maskNric(nric: string) {
   return `${"•".repeat(nric.length - 4)}${nric.slice(-4)}`;
 }
 
+// Join date is stored as ISO ("YYYY-MM-DD") for the <input type="date">
+// editor; shown here as "1 Mar 2005" so the list reads at a glance instead
+// of everyone squinting at ISO dashes.
+function formatJoinDate(joinDate: string) {
+  if (!joinDate) return "—";
+  const d = new Date(`${joinDate}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-SG", { day: "numeric", month: "short", year: "numeric" });
+}
+
 export default async function EmployeesPage() {
   const company = await getActiveCompany();
   if (!company) {
@@ -125,6 +135,7 @@ export default async function EmployeesPage() {
               <thead>
                 <tr>
                   <th>Employee</th>
+                  <th>Joined</th>
                   <th>NRIC / FIN</th>
                   <th>Residency</th>
                   <th className="n">Salary</th>
@@ -143,6 +154,7 @@ export default async function EmployeesPage() {
                         <div className="strong">{e.name}</div>
                         <div className="hint">{[e.empNo, e.title].filter(Boolean).join(" · ")}</div>
                       </td>
+                      <td className="hint">{formatJoinDate(e.joinDate)}</td>
                       <td className="hint">{maskNric(e.nric)}</td>
                       <td>{e.res}</td>
                       <td className="n">{money(e.salary)}</td>
@@ -154,7 +166,7 @@ export default async function EmployeesPage() {
                   );
                 })}
                 {!employees.length && (
-                  <tr><td colSpan={8} className="empty">No employees yet — add one above.</td></tr>
+                  <tr><td colSpan={9} className="empty">No employees yet — add one above.</td></tr>
                 )}
               </tbody>
             </table>

@@ -688,6 +688,26 @@ nav.tabs a.on {
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- calendar auto-save status ---------- */
+.save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-3);
+  min-height: 20px;
+}
+.save-status.saved {
+  color: var(--good);
+}
+.save-status .spinner {
+  width: 14px;
+  height: 14px;
+  border-color: var(--line-strong);
+  border-top-color: var(--ink-3);
+}
+
 /* ---------- leave calendar ---------- */
 .cal {
   display: grid;

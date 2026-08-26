@@ -1,5 +1,6 @@
 import AppShell from "@/components/AppShell";
 import EmployeePicker from "@/components/EmployeePicker";
+import MonthPicker from "@/components/MonthPicker";
 import SubmitButton from "@/components/SubmitButton";
 import LeaveCalendar from "@/components/LeaveCalendar";
 import { getActiveCompany } from "@/lib/activeCompany";
@@ -124,14 +125,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
           <div className="bd">
             <div className="flex items-end gap-4 flex-wrap">
               <EmployeePicker employees={employees} selectedId={selected.id} basePath="/attendance" ym={ym} />
-              <form method="get" className="flex items-end gap-2">
-                <input type="hidden" name="emp" value={selected.id} />
-                <label className="f" style={{ maxWidth: 170 }}>
-                  <span>Month</span>
-                  <input className="inp" type="month" name="ym" defaultValue={ym} />
-                </label>
-                <button className="btn sm" type="submit" style={{ marginBottom: 1 }}>Go</button>
-              </form>
+              <MonthPicker ym={ym} employeeId={selected.id} basePath="/attendance" />
             </div>
           </div>
         </div>
@@ -153,7 +147,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
               </div>
             </div>
             <div className="bd">
-              <LeaveCalendar ym={ym} pattern={selected.pattern} initial={leaveEntries} />
+              <LeaveCalendar ym={ym} pattern={selected.pattern} initial={leaveEntries} companyId={company.id} employeeId={selected.id} />
             </div>
           </div>
 

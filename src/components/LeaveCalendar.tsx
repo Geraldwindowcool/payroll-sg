@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import type { LeaveDayEntry, LeaveType } from "@/lib/leave";
+import { autoSaveLeaveDaysAction } from "@/app/actions/leaveDays";
 
 const TYPES: { key: LeaveType; label: string; short: string }[] = [
   { key: "MC", label: "MC (paid)", short: "MC" },
@@ -15,28 +16,50 @@ type Marked = { type: LeaveType; half: boolean };
  *  leave. Pick the type you're marking, then click dates: first click
  *  marks a full day, second makes it a half day, third clears it.
  *
+ *  Every click saves itself right away (see autoSaveLeaveDaysAction) —
+ *  no separate Save button for this part, and a plain "Saved" message
+ *  confirms it, so nobody has to wonder whether a tap actually took or
+ *  scroll down to find a button to be sure.
+ *
  *  Non-working days (Sundays always, Saturdays on a 5-day week) are shown
  *  greyed and can't be marked — marking them would be recorded as zero
  *  days anyway, so letting people click them would only be misleading.
  *
- *  State is posted as one hidden field, `leaveDays`, holding
- *  "YYYY-MM-DD:TYPE:half" entries — the server re-derives the week totals
- *  from these rather than trusting anything the page calculated. */
+ *  State is ALSO posted as one hidden field, `leaveDays`, holding
+ *  "YYYY-MM-DD:TYPE:half" entries, in case this calendar sits inside a
+ *  bigger form (Attendance/Timesheet) — that form's own Save re-saves the
+ *  same dates as a harmless safety net, it just doesn't have to. */
 export default function LeaveCalendar({
   ym,
   pattern,
   initial,
+  companyId,
+  employeeId,
   disabled = false,
 }: {
   ym: string;
   pattern: number;
   initial: LeaveDayEntry[];
+  companyId: string;
+  employeeId: string;
   disabled?: boolean;
 }) {
   const [marks, setMarks] = useState<Map<string, Marked>>(
     () => new Map(initial.map((e) => [e.date, { type: e.type, half: e.half }]))
   );
   const [activeType, setActiveType] = useState<LeaveType>("MC");
+  const [isSaving, startSaving] = useTransition();
+  const [justSaved, setJustSaved] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Re-sync local marks whenever the server sends a different initial set —
+  // e.g. after switching employee/month, or after the auto-save above
+  // triggers a fresh server render.
+  useEffect(() => {
+    setMarks(new Map(initial.map((e) => [e.date, { type: e.type, half: e.half }])));
+  }, [initial]);
+
+  useEffect(() => () => { if (savedTimer.current) clearTimeout(savedTimer.current); }, []);
 
   const [y, m] = ym.split("-").map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
@@ -53,15 +76,24 @@ export default function LeaveCalendar({
   const dateKey = (day: number) => `${ym}-${String(day).padStart(2, "0")}`;
 
   const cycle = (day: number) => {
-    if (disabled || !isWorkingDay(day)) return;
+    if (disabled || isSaving || !isWorkingDay(day)) return;
     const key = dateKey(day);
-    setMarks((prev) => {
-      const next = new Map(prev);
-      const cur = next.get(key);
-      if (!cur || cur.type !== activeType) next.set(key, { type: activeType, half: false });
-      else if (!cur.half) next.set(key, { type: activeType, half: true });
-      else next.delete(key);
-      return next;
+    const next = new Map(marks);
+    const cur = next.get(key);
+    if (!cur || cur.type !== activeType) next.set(key, { type: activeType, half: false });
+    else if (!cur.half) next.set(key, { type: activeType, half: true });
+    else next.delete(key);
+    setMarks(next);
+
+    const entries: LeaveDayEntry[] = Array.from(next.entries()).map(([date, mk]) => ({ date, type: mk.type, half: mk.half }));
+    setJustSaved(false);
+    startSaving(async () => {
+      const result = await autoSaveLeaveDaysAction(companyId, employeeId, ym, entries);
+      if (result.ok) {
+        setJustSaved(true);
+        if (savedTimer.current) clearTimeout(savedTimer.current);
+        savedTimer.current = setTimeout(() => setJustSaved(false), 3000);
+      }
     });
   };
 
@@ -92,7 +124,18 @@ export default function LeaveCalendar({
             {t.label}
           </button>
         ))}
-        <span className="hint">Click a date to mark it · click again for a half day · again to clear</span>
+        <span className={`save-status${!isSaving && justSaved ? " saved" : ""}`} aria-live="polite">
+          {isSaving && (
+            <>
+              <span className="spinner" aria-hidden="true" /> Saving…
+            </>
+          )}
+          {!isSaving && justSaved && <>✓ Saved</>}
+        </span>
+      </div>
+
+      <div className="note info">
+        <strong>How to mark a day:</strong> Tap the date once for a full day. Tap it a second time for a half day. Tap it a third time to remove it.
       </div>
 
       <div className="cal">
