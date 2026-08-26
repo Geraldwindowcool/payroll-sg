@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import { cookies } from "next/headers";
 import AppShell from "@/components/AppShell";
 import SubmitButton from "@/components/SubmitButton";
 import RowSaveButton from "@/components/RowSaveButton";
@@ -10,17 +11,29 @@ import { updateCompanyAction, updateCpfAction } from "@/app/actions/settings";
 import { createLevyAction, updateLevyAction, deleteLevyAction } from "@/app/actions/levies";
 import { addCompanyAction, deleteCompanyAction } from "@/app/actions/company";
 import { createUserAction, updateUserAction, setUserEmployeeAccessAction } from "@/app/actions/users";
-import { disconnectXeroAction } from "@/app/actions/xero";
-import { getXeroConnection } from "@/lib/xero";
+import { disconnectXeroAction, chooseXeroTenantAction } from "@/app/actions/xero";
+import { getXeroConnection, type XeroTenant, type PendingXeroTokens } from "@/lib/xero";
 import type { CpfConfig } from "@/lib/payroll";
 import CreateUserForm from "./CreateUserForm";
 
-export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ xeroConnected?: string; xeroError?: string }> }) {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ xeroConnected?: string; xeroError?: string; xeroPick?: string }> }) {
   const sp = await searchParams;
   const company = await getActiveCompany();
-  const [companies, session] = await Promise.all([getCompanies(), auth()]);
+  const [companies, session, cookieJar] = await Promise.all([getCompanies(), auth(), cookies()]);
   const me = session?.user;
   const xeroConnection = company ? await getXeroConnection(company.id) : null;
+
+  // A pending multi-organisation connection (see the callback route) —
+  // shown as a picker below instead of the usual connect/disconnect card.
+  let xeroPending: { companyId: string; tokens: PendingXeroTokens; tenants: XeroTenant[] } | null = null;
+  const pendingRaw = cookieJar.get("xero_pending")?.value;
+  if (pendingRaw) {
+    try {
+      xeroPending = JSON.parse(pendingRaw);
+    } catch {
+      xeroPending = null;
+    }
+  }
 
   if (!company) {
     return (
@@ -59,6 +72,28 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <div className="stack-lg">
         {sp.xeroConnected && <div className="note good">Connected to Xero organisation &quot;{sp.xeroConnected}&quot;.</div>}
         {sp.xeroError && <div className="note bad">Xero: {sp.xeroError}</div>}
+
+        {xeroPending && (
+          <div className="card">
+            <div className="hd"><h2>Which Xero organisation is this?</h2></div>
+            <div className="bd stack">
+              <p className="hint">
+                Your Xero login has access to more than one organisation, so we can&apos;t tell which one belongs to <strong>{companies.find((c) => c.id === xeroPending!.companyId)?.name ?? "this company"}</strong> — pick it below. (Connecting a different payroll company later will ask again, so each one can point at its own Xero organisation.)
+              </p>
+              <form action={chooseXeroTenantAction} className="stack">
+                <input type="hidden" name="companyId" value={xeroPending.companyId} />
+                <div className="stack" style={{ gap: 8 }}>
+                  {xeroPending.tenants.map((t) => (
+                    <label key={t.tenantId} className="chk">
+                      <input type="radio" name="tenantId" value={t.tenantId} defaultChecked={t === xeroPending!.tenants[0]} /> {t.tenantName}
+                    </label>
+                  ))}
+                </div>
+                <div><SubmitButton>Confirm organisation</SubmitButton></div>
+              </form>
+            </div>
+          </div>
+        )}
 
         <div className="card">
           <div className="hd"><h2>Xero connection</h2><span className="hint">Lets the Budget dashboard&apos;s &quot;Refresh from Xero&quot; button pull this month&apos;s revenue automatically.</span></div>

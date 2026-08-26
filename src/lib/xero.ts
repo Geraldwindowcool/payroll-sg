@@ -51,41 +51,52 @@ async function requestTokens(body: URLSearchParams): Promise<XeroTokenResponse> 
   return res.json();
 }
 
-async function fetchConnectedTenants(accessToken: string): Promise<{ tenantId: string; tenantName: string }[]> {
+export interface XeroTenant {
+  tenantId: string;
+  tenantName: string;
+}
+
+export async function getXeroTenants(accessToken: string): Promise<XeroTenant[]> {
   const res = await fetch(XERO_CONNECTIONS_URL, { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (!res.ok) throw new Error(`Couldn't look up your Xero organisation (${res.status}).`);
+  if (!res.ok) throw new Error(`Couldn't look up your Xero organisations (${res.status}).`);
   return res.json();
 }
 
-/** Completes the OAuth handshake for a company: exchanges the code Xero
- *  handed back, finds which organisation was authorized, and stores (or
- *  replaces) that company's connection. Returns the organisation's name
- *  for a friendly confirmation message. */
-export async function completeXeroConnection(companyId: string, code: string): Promise<string> {
-  const tokens = await requestTokens(
-    new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: env("XERO_REDIRECT_URI") })
-  );
-  const tenants = await fetchConnectedTenants(tokens.access_token);
-  const tenant = tenants[0];
-  if (!tenant) throw new Error("Xero didn't return any connected organisation — try connecting again.");
+export interface PendingXeroTokens {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: Date;
+}
 
-  const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+/** Step 1 of finishing the handshake — exchanges the code Xero handed
+ *  back for tokens, and looks up every organisation those tokens can
+ *  reach. Xero authorizes per (app, Xero-user) pair, not per
+ *  organisation — once you've granted this app access to an org, that
+ *  grant accumulates, so a *second* company's connect click can come
+ *  back listing *both* organisations, not just the new one. Callers must
+ *  not assume the first tenant returned is the "new" one; when there's
+ *  more than one, the admin needs to say which is which (see
+ *  saveXeroConnection / the picker in Settings). */
+export async function exchangeXeroCode(code: string): Promise<{ tokens: PendingXeroTokens; tenants: XeroTenant[] }> {
+  const raw = await requestTokens(new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: env("XERO_REDIRECT_URI") }));
+  const tenants = await getXeroTenants(raw.access_token);
+  if (!tenants.length) throw new Error("Xero didn't return any connected organisation — try connecting again.");
+  return {
+    tokens: { accessToken: raw.access_token, refreshToken: raw.refresh_token, expiresAt: new Date(Date.now() + raw.expires_in * 1000) },
+    tenants,
+  };
+}
+
+/** Step 2 — stores which Xero organisation a specific company should use,
+ *  with the token pair from the handshake that produced it. */
+export async function saveXeroConnection(companyId: string, tenant: XeroTenant, tokens: PendingXeroTokens) {
   await db
     .insert(xeroConnections)
-    .values({
-      companyId,
-      tenantId: tenant.tenantId,
-      tenantName: tenant.tenantName,
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
-      expiresAt,
-    })
+    .values({ companyId, tenantId: tenant.tenantId, tenantName: tenant.tenantName, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, expiresAt: tokens.expiresAt })
     .onConflictDoUpdate({
       target: xeroConnections.companyId,
-      set: { tenantId: tenant.tenantId, tenantName: tenant.tenantName, accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt, updatedAt: new Date() },
+      set: { tenantId: tenant.tenantId, tenantName: tenant.tenantName, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, expiresAt: tokens.expiresAt, updatedAt: new Date() },
     });
-
-  return tenant.tenantName;
 }
 
 export async function getXeroConnection(companyId: string): Promise<XeroConnection | null> {

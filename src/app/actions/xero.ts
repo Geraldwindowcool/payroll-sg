@@ -2,11 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { db } from "@/db";
 import { budgetEntries } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/access";
-import { disconnectXero, getXeroRevenueForRange } from "@/lib/xero";
+import { disconnectXero, getXeroRevenueForRange, saveXeroConnection, type XeroTenant, type PendingXeroTokens } from "@/lib/xero";
 
 function s(fd: FormData, k: string) {
   return String(fd.get(k) ?? "").trim();
@@ -19,6 +20,38 @@ export async function disconnectXeroAction(formData: FormData) {
   await disconnectXero(companyId);
   revalidatePath("/admin/settings");
   revalidatePath("/admin/budget");
+}
+
+/** Finishes a connection that came back with more than one reachable Xero
+ *  organisation — see the callback route's comment for why that happens.
+ *  Reads the token pair stashed there by the callback, applies it to
+ *  whichever organisation the admin actually picked, and forgets the
+ *  pending cookie either way (picking wrong just means clicking Connect
+ *  again — nothing destructive happened yet). */
+export async function chooseXeroTenantAction(formData: FormData) {
+  await requireAdmin();
+  const jar = await cookies();
+  const raw = jar.get("xero_pending")?.value;
+  jar.delete("xero_pending");
+  if (!raw) redirect("/admin/settings?xeroError=That+connection+attempt+expired+%E2%80%94+try+Connect+to+Xero+again.");
+
+  let pending: { companyId: string; tokens: PendingXeroTokens; tenants: XeroTenant[] };
+  try {
+    pending = JSON.parse(raw);
+  } catch {
+    redirect("/admin/settings?xeroError=That+connection+attempt+expired+%E2%80%94+try+Connect+to+Xero+again.");
+  }
+
+  const companyId = s(formData, "companyId");
+  const tenantId = s(formData, "tenantId");
+  if (companyId !== pending.companyId) redirect("/admin/settings?xeroError=That+connection+attempt+was+for+a+different+company+%E2%80%94+try+Connect+to+Xero+again.");
+  const tenant = pending.tenants.find((t) => t.tenantId === tenantId);
+  if (!tenant) redirect("/admin/settings?xeroError=Unrecognised+organisation+%E2%80%94+try+Connect+to+Xero+again.");
+
+  await saveXeroConnection(companyId, tenant, { ...pending.tokens, expiresAt: new Date(pending.tokens.expiresAt) });
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin/budget");
+  redirect(`/admin/settings?xeroConnected=${encodeURIComponent(tenant.tenantName)}`);
 }
 
 /** The "Refresh from Xero" button on the Budget dashboard. Pulls that
