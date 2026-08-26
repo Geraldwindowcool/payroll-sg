@@ -22,6 +22,7 @@ function mkEntry(overrides: Partial<BudgetEntry> & { id: string; categoryId: str
     companyId: "co1",
     ym: YM,
     description: "",
+    source: "MANUAL",
     updatedByUserId: null,
     createdAt: new Date(),
     updatedAt: new Date(),

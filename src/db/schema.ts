@@ -27,6 +27,7 @@ export const residencyEnum = pgEnum("residency", ["SC", "PR", "FW"]);
 export const allowanceBasisEnum = pgEnum("allowance_basis", ["DAY", "HOUR", "FIXED"]);
 export const leaveTypeEnum = pgEnum("leave_type", ["MC", "PL", "UL"]);
 export const budgetCategoryTypeEnum = pgEnum("budget_category_type", ["INCOME", "EXPENSE"]);
+export const budgetEntrySourceEnum = pgEnum("budget_entry_source", ["MANUAL", "XERO"]);
 
 // Default CPF configuration — January 2026 figures. Editable per company
 // from Settings once the app is running; this is only the seed value.
@@ -337,11 +338,36 @@ export const budgetEntries = pgTable(
     ym: text("ym").notNull(), // "YYYY-MM"
     amount: numeric("amount", { mode: "number", precision: 10, scale: 2 }).notNull(),
     description: text("description").notNull().default(""),
+    // MANUAL (default) for anything typed in by hand; XERO for the one
+    // entry per category+month that "Refresh from Xero" maintains — that
+    // button re-writes its own entry each time rather than piling up
+    // duplicates, while manual entries next to it are left alone.
+    source: budgetEntrySourceEnum("source").notNull().default("MANUAL"),
     updatedByUserId: text("updated_by_user_id"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [index("budget_entries_company_ym_idx").on(t.companyId, t.ym), index("budget_entries_category_idx").on(t.categoryId)]
+);
+
+// One row per company holding its live connection to a Xero organisation —
+// the tokens needed to call the Xero API on that company's behalf, set up
+// once via the /api/xero/authorize -> /api/xero/callback handshake and kept
+// fresh automatically (refreshToken rotates every time it's used).
+export const xeroConnections = pgTable(
+  "xero_connections",
+  {
+    id: id(),
+    companyId: fk("company_id"),
+    tenantId: text("tenant_id").notNull(),
+    tenantName: text("tenant_name").notNull(),
+    accessToken: text("access_token").notNull(),
+    refreshToken: text("refresh_token").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("xero_connections_company_unique").on(t.companyId)]
 );
 
 export const budgetCategoriesRelations = relations(budgetCategories, ({ one, many }) => ({
@@ -354,6 +380,10 @@ export const budgetEntriesRelations = relations(budgetEntries, ({ one }) => ({
   category: one(budgetCategories, { fields: [budgetEntries.categoryId], references: [budgetCategories.id] }),
 }));
 
+export const xeroConnectionsRelations = relations(xeroConnections, ({ one }) => ({
+  company: one(companies, { fields: [xeroConnections.companyId], references: [companies.id] }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type Company = typeof companies.$inferSelect;
 export type Levy = typeof levies.$inferSelect;
@@ -364,3 +394,4 @@ export type TimesheetWeek = typeof timesheetWeeks.$inferSelect;
 export type MonthlyItem = typeof monthlyItems.$inferSelect;
 export type BudgetCategory = typeof budgetCategories.$inferSelect;
 export type BudgetEntry = typeof budgetEntries.$inferSelect;
+export type XeroConnection = typeof xeroConnections.$inferSelect;

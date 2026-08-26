@@ -10,13 +10,17 @@ import { updateCompanyAction, updateCpfAction } from "@/app/actions/settings";
 import { createLevyAction, updateLevyAction, deleteLevyAction } from "@/app/actions/levies";
 import { addCompanyAction, deleteCompanyAction } from "@/app/actions/company";
 import { createUserAction, updateUserAction, setUserEmployeeAccessAction } from "@/app/actions/users";
+import { disconnectXeroAction } from "@/app/actions/xero";
+import { getXeroConnection } from "@/lib/xero";
 import type { CpfConfig } from "@/lib/payroll";
 import CreateUserForm from "./CreateUserForm";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ xeroConnected?: string; xeroError?: string }> }) {
+  const sp = await searchParams;
   const company = await getActiveCompany();
   const [companies, session] = await Promise.all([getCompanies(), auth()]);
   const me = session?.user;
+  const xeroConnection = company ? await getXeroConnection(company.id) : null;
 
   if (!company) {
     return (
@@ -53,6 +57,30 @@ export default async function SettingsPage() {
       </div>
 
       <div className="stack-lg">
+        {sp.xeroConnected && <div className="note good">Connected to Xero organisation &quot;{sp.xeroConnected}&quot;.</div>}
+        {sp.xeroError && <div className="note bad">Xero: {sp.xeroError}</div>}
+
+        <div className="card">
+          <div className="hd"><h2>Xero connection</h2><span className="hint">Lets the Budget dashboard&apos;s &quot;Refresh from Xero&quot; button pull this month&apos;s revenue automatically.</span></div>
+          <div className="bd">
+            {xeroConnection ? (
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="pill green">Connected</span>
+                <span>{xeroConnection.tenantName}</span>
+                <form action={disconnectXeroAction} style={{ marginLeft: "auto" }}>
+                  <input type="hidden" name="companyId" value={company.id} />
+                  <SubmitButton className="btn sm danger" pendingText="Disconnecting…">Disconnect</SubmitButton>
+                </form>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="pill gray">Not connected</span>
+                <a className="btn sm pri" href="/api/xero/authorize" style={{ marginLeft: "auto" }}>Connect to Xero</a>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="card">
           <div className="hd"><h2>Company — {company.name}</h2></div>
           <div className="bd">

@@ -1,9 +1,12 @@
 import AppShell from "@/components/AppShell";
 import { getActiveCompany } from "@/lib/activeCompany";
 import { getBudgetCategories, getBudgetSummaryForMonth, getBudgetSummaryForYear } from "@/lib/budgetService";
+import { getXeroConnection } from "@/lib/xero";
 import { money, money0 } from "@/lib/payroll";
 import { seedDefaultCategoriesAction } from "@/app/actions/budget";
+import { refreshRevenueFromXeroAction } from "@/app/actions/xero";
 import SubmitButton from "@/components/SubmitButton";
+import Link from "next/link";
 
 function thisMonth() {
   const d = new Date();
@@ -22,7 +25,7 @@ function VariancePill({ type, target, actual }: { type: "INCOME" | "EXPENSE"; ta
   return <span className={`pill ${good ? "green" : "red"}`}>{good ? "+" : "−"}{money(Math.abs(diff))}</span>;
 }
 
-export default async function BudgetDashboard({ searchParams }: { searchParams: Promise<{ year?: string }> }) {
+export default async function BudgetDashboard({ searchParams }: { searchParams: Promise<{ year?: string; xeroError?: string; xeroSynced?: string }> }) {
   const sp = await searchParams;
   const company = await getActiveCompany();
   if (!company) {
@@ -58,15 +61,17 @@ export default async function BudgetDashboard({ searchParams }: { searchParams: 
 
   const ym = thisMonth();
   const year = Number(sp.year) || new Date().getFullYear();
-  const [summary, yearTotals] = await Promise.all([
+  const [summary, yearTotals, xeroConnection] = await Promise.all([
     getBudgetSummaryForMonth(company.id, ym),
     getBudgetSummaryForYear(company.id, year),
+    getXeroConnection(company.id),
   ]);
 
   const payrollCategory = summary.categories.find((c) => c.isSystem);
   const payrollCost = payrollCategory?.actual ?? 0;
   const otherExpense = summary.expense - payrollCost;
   const yearTotal = yearTotals.reduce((s, m) => ({ income: s.income + m.income, expense: s.expense + m.expense, net: s.net + m.net }), { income: 0, expense: 0, net: 0 });
+  const incomeCategories = categories.filter((c) => c.type === "INCOME");
 
   return (
     <AppShell active="/admin/budget">
@@ -78,6 +83,32 @@ export default async function BudgetDashboard({ searchParams }: { searchParams: 
       </div>
 
       <div className="stack-lg">
+        {sp.xeroSynced && <div className="note good">Synced {money(Number(sp.xeroSynced))} of revenue from Xero into {ym}.</div>}
+        {sp.xeroError && <div className="note bad">Xero: {sp.xeroError}</div>}
+
+        <div className="card">
+          <div className="hd"><h2>Sync revenue from Xero</h2></div>
+          <div className="bd">
+            {!xeroConnection ? (
+              <div className="note warn">Not connected to Xero yet — <Link href="/admin/settings">connect it in Settings</Link> to enable this.</div>
+            ) : !incomeCategories.length ? (
+              <div className="note warn">No income category to sync into yet — add one in Categories.</div>
+            ) : (
+              <form action={refreshRevenueFromXeroAction} className="flex items-end gap-3 flex-wrap">
+                <input type="hidden" name="companyId" value={company.id} />
+                <input type="hidden" name="ym" value={ym} />
+                <label className="f" style={{ maxWidth: 260 }}>
+                  <span>Into category</span>
+                  <select className="inp" name="categoryId" defaultValue={incomeCategories[0].id}>
+                    {incomeCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </label>
+                <SubmitButton pendingText="Syncing…">Refresh from Xero — {xeroConnection.tenantName}</SubmitButton>
+              </form>
+            )}
+          </div>
+        </div>
+
         <div className="stats">
           <div className="stat accent">
             <div className="k">Net cashflow this month</div>
