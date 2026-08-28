@@ -52,7 +52,13 @@ export const DEFAULT_CPF = {
   },
 } as const;
 
-export const DEFAULT_BANK_COLS = [
+export interface BankCol {
+  on: boolean;
+  head: string;
+  f: string;
+}
+
+export const DEFAULT_BANK_COLS: BankCol[] = [
   { on: true, head: "Payee Name", f: "name" },
   { on: true, head: "Bank Code", f: "bankCode" },
   { on: true, head: "Branch Code", f: "branchCode" },
@@ -60,8 +66,27 @@ export const DEFAULT_BANK_COLS = [
   { on: true, head: "Amount", f: "amount" },
   { on: true, head: "Currency", f: "ccy" },
   { on: true, head: "Payment Date", f: "payDate" },
-  { on: true, head: "Payment Type", f: "payType" },
+  { on: true, head: "Purpose Code", f: "payType" },
   { on: true, head: "Reference", f: "ref" },
+];
+
+/** Every field the bank file export knows how to fill in, with a sensible
+ *  default header — the full menu Settings' "Bank file columns" editor
+ *  offers, independent of which ones a given company currently has
+ *  switched on. Adding a field here only makes it available to enable;
+ *  the export route (src/app/admin/bank/export/route.ts) is what
+ *  actually needs to know how to compute its value. */
+export const BANK_FIELD_OPTIONS = [
+  { f: "name", defaultHead: "Payee Name" },
+  { f: "bankName", defaultHead: "Employee Bank" },
+  { f: "bankCode", defaultHead: "Bank Code" },
+  { f: "branchCode", defaultHead: "Branch Code" },
+  { f: "acct", defaultHead: "Account Number" },
+  { f: "amount", defaultHead: "Amount" },
+  { f: "ccy", defaultHead: "Currency" },
+  { f: "payDate", defaultHead: "Payment Date" },
+  { f: "payType", defaultHead: "Purpose Code" },
+  { f: "ref", defaultHead: "Reference" },
 ] as const;
 
 export const users = pgTable("users", {
@@ -87,7 +112,7 @@ export const companies = pgTable("companies", {
   sdlEnabled: boolean("sdl_enabled").notNull().default(true),
   roundNet: boolean("round_net").notNull().default(false),
   cpf: jsonb("cpf").notNull().$type<typeof DEFAULT_CPF>().default(DEFAULT_CPF as any),
-  bankCols: jsonb("bank_cols").notNull().$type<typeof DEFAULT_BANK_COLS>().default(DEFAULT_BANK_COLS as any),
+  bankCols: jsonb("bank_cols").notNull().$type<BankCol[]>().default(DEFAULT_BANK_COLS as any),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

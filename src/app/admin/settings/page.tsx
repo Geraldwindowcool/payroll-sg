@@ -7,14 +7,25 @@ import { getActiveCompany } from "@/lib/activeCompany";
 import { getCompanies, getLevies, getEmployees } from "@/lib/payrollService";
 import { getUsers, getEmployeeAccessByUser } from "@/lib/usersService";
 import { auth } from "@/lib/auth";
-import { updateCompanyAction, updateCpfAction } from "@/app/actions/settings";
+import { updateCompanyAction, updateCpfAction, updateBankColsAction } from "@/app/actions/settings";
 import { createLevyAction, updateLevyAction, deleteLevyAction } from "@/app/actions/levies";
 import { addCompanyAction, deleteCompanyAction } from "@/app/actions/company";
 import { createUserAction, updateUserAction, setUserEmployeeAccessAction } from "@/app/actions/users";
 import { disconnectXeroAction, chooseXeroTenantAction } from "@/app/actions/xero";
 import { getXeroConnection, type XeroTenant, type PendingXeroTokens } from "@/lib/xero";
+import { BANK_FIELD_OPTIONS, type BankCol } from "@/db/schema";
 import type { CpfConfig } from "@/lib/payroll";
 import CreateUserForm from "./CreateUserForm";
+
+/** Merges the company's saved column order with the full menu of
+ *  available fields — so a field added to BANK_FIELD_OPTIONS after a
+ *  company's bankCols was first saved (e.g. "Employee Bank") still shows
+ *  up as an available-but-off option, instead of vanishing. */
+function mergedBankCols(saved: BankCol[]): BankCol[] {
+  const savedKeys = new Set(saved.map((c) => c.f));
+  const extra = BANK_FIELD_OPTIONS.filter((o) => !savedKeys.has(o.f)).map((o) => ({ f: o.f, head: o.defaultHead, on: false }));
+  return [...saved, ...extra];
+}
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ xeroConnected?: string; xeroError?: string; xeroPick?: string }> }) {
   const sp = await searchParams;
@@ -59,6 +70,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   ]);
   const sortedCompanyEmployees = [...companyEmployees].sort((a, b) => a.name.localeCompare(b.name));
   const cpf = company.cpf as unknown as CpfConfig;
+  const bankCols = mergedBankCols(company.bankCols);
 
   return (
     <AppShell active="/admin/settings">
@@ -135,6 +147,42 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                 <label className="chk"><input type="checkbox" name="roundNet" defaultChecked={company.roundNet} /> Round net pay down to nearest 5 cents</label>
               </div>
               <div><SubmitButton>Save company details</SubmitButton></div>
+            </form>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="hd">
+            <h2>Bank file columns</h2>
+            <span className="hint">
+              Which fields the Bank file CSV includes, what each is labeled, and what order they come in — line these up to match your bank&apos;s bulk-payment upload template exactly.
+            </span>
+          </div>
+          <div className="bd stack">
+            <form action={updateBankColsAction} className="stack">
+              <input type="hidden" name="id" value={company.id} />
+              <div className="tw">
+                <table>
+                  <thead><tr><th style={{ width: 70 }}>Order</th><th>Column header in CSV</th><th>Field</th><th style={{ width: 90 }}>Include</th></tr></thead>
+                  <tbody>
+                    {bankCols.map((c, i) => {
+                      const option = BANK_FIELD_OPTIONS.find((o) => o.f === c.f);
+                      return (
+                        <tr key={c.f}>
+                          <td><input className="inp num" type="number" name={`order_${c.f}`} defaultValue={i + 1} style={{ width: 60 }} /></td>
+                          <td><input className="inp" name={`head_${c.f}`} defaultValue={c.head} /></td>
+                          <td className="hint">{option?.defaultHead ?? c.f}</td>
+                          <td><label className="chk"><input type="checkbox" name={`on_${c.f}`} defaultChecked={c.on} /></label></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="hint">
+                &quot;Field&quot; shows what data actually fills that column, in case you rename the header — e.g. rename &quot;Purpose Code&quot; to whatever your bank calls it, without changing what it sends. Unticking a field removes it from the download but keeps its label saved for later.
+              </p>
+              <div><SubmitButton>Save column layout</SubmitButton></div>
             </form>
           </div>
         </div>

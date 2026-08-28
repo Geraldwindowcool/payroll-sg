@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/access";
 import { getCompany, getMonthPayroll } from "@/lib/payrollService";
 import { getActiveCompanyId } from "@/lib/activeCompany";
-
-type BankCol = { on: boolean; head: string; f: string };
+import type { BankCol } from "@/db/schema";
 
 function csvEscape(v: string) {
   if (/[",\n]/.test(v)) return `"${v.replace(/"/g, '""')}"`;
@@ -22,18 +21,22 @@ export async function GET(req: NextRequest) {
   if (!company) return NextResponse.json({ error: "Company not found" }, { status: 404 });
 
   const rows = await getMonthPayroll(companyId, ym);
-  const cols = (company.bankCols as unknown as BankCol[]).filter((c) => c.on);
+  const cols: BankCol[] = company.bankCols.filter((c) => c.on);
   const today = new Date().toISOString().slice(0, 10);
 
   const values: Record<string, (r: (typeof rows)[number]) => string> = {
     name: (r) => r.emp.name,
+    bankName: (r) => r.empRow.bankName,
     bankCode: (r) => r.empRow.bankCode,
     branchCode: (r) => r.empRow.branchCode,
     acct: (r) => r.empRow.acct,
     amount: (r) => r.net.toFixed(2),
     ccy: () => "SGD",
     payDate: () => today,
-    payType: () => "SALARY",
+    // "SALA" is the standard bank Purpose Code for a salary payment
+    // (confirmed against OCBC Velocity's own GIRO Payroll screen, which
+    // defaults to "SALA - Salary Payment").
+    payType: () => "SALA",
     ref: () => company.ref || "SALARY",
   };
 

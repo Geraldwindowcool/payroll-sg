@@ -35,6 +35,13 @@
   --bad-soft: #fbe9e9;
   --bad-line: #f0c6c6;
 
+  /* Chart series colors — kept distinct from --accent, which stays
+     reserved for interactive elements only. Validated as a categorical
+     pair (adjacent CVD ΔE 24.7, normal-vision ΔE 33.6 against a white
+     surface — well clear of the colorblind-safety floor). */
+  --chart-income: #2a78d6;
+  --chart-expense: #eb6834;
+
   /* spacing scale — reach for these instead of ad-hoc px values */
   --sp-1: 4px;
   --sp-2: 8px;

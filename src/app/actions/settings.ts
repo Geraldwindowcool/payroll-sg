@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { companies, DEFAULT_CPF } from "@/db/schema";
+import { companies, DEFAULT_CPF, BANK_FIELD_OPTIONS } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/access";
 import type { CpfConfig } from "@/lib/payroll";
@@ -69,4 +69,27 @@ export async function updateCpfAction(formData: FormData) {
     .where(eq(companies.id, id));
   revalidatePath("/admin/settings");
   revalidatePath("/", "layout");
+}
+
+/** Rewrites which columns the bank file export includes, what each is
+ *  labeled, and what order they come in — so the CSV can be lined up
+ *  exactly with whatever your bank's bulk-upload template expects,
+ *  without needing a code change every time a detail differs. */
+export async function updateBankColsAction(formData: FormData) {
+  await requireAdmin();
+  const id = s(formData, "id");
+  if (!id) return;
+
+  const cols = BANK_FIELD_OPTIONS.map((opt) => ({
+    f: opt.f,
+    head: s(formData, `head_${opt.f}`) || opt.defaultHead,
+    on: formData.get(`on_${opt.f}`) === "on",
+    order: num(formData, `order_${opt.f}`, 999),
+  }))
+    .sort((a, b) => a.order - b.order)
+    .map(({ f, head, on }) => ({ f, head, on }));
+
+  await db.update(companies).set({ bankCols: cols, updatedAt: new Date() }).where(eq(companies.id, id));
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin/bank");
 }

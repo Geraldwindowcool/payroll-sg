@@ -1,5 +1,6 @@
 import AppShell from "@/components/AppShell";
-import { getCompanyOverviewForMonth } from "@/lib/companyOverviewService";
+import { getCompanyOverviewForMonth, getCompanyOverviewTrendForYear } from "@/lib/companyOverviewService";
+import { IncomeExpenseByCompanyChart, NetCashflowByCompanyChart, IncomeExpenseTrendChart } from "@/components/CompanyCharts";
 import { money, money0 } from "@/lib/payroll";
 
 function thisMonth() {
@@ -10,9 +11,14 @@ function thisMonth() {
 /** The cross-company view — combined payroll + budget performance across
  *  every company on the account, for whoever wants the whole-business
  *  picture instead of switching between companies one at a time. */
-export default async function CompaniesOverviewPage() {
+export default async function CompaniesOverviewPage({ searchParams }: { searchParams: Promise<{ year?: string }> }) {
+  const sp = await searchParams;
   const ym = thisMonth();
-  const { rows, totals } = await getCompanyOverviewForMonth(ym);
+  const year = Number(sp.year) || new Date().getFullYear();
+  const [{ rows, totals }, trend] = await Promise.all([
+    getCompanyOverviewForMonth(ym),
+    getCompanyOverviewTrendForYear(year),
+  ]);
 
   if (!rows.length) {
     return (
@@ -21,6 +27,12 @@ export default async function CompaniesOverviewPage() {
       </AppShell>
     );
   }
+
+  // Plain, computed callouts — not editorial, just the two facts most
+  // likely to answer "where should we look first".
+  const worst = [...rows].sort((a, b) => a.netCashflow - b.netCashflow)[0];
+  const totalCost = totals.payrollCost + totals.otherExpense;
+  const payrollShare = totalCost > 0 ? Math.round((totals.payrollCost / totalCost) * 100) : 0;
 
   return (
     <AppShell active="/admin/companies">
@@ -41,6 +53,40 @@ export default async function CompaniesOverviewPage() {
           <Stat k="Total income" v={money0(totals.income)} m={ym} />
           <Stat k="Total payroll cost" v={money0(totals.payrollCost)} m={`${totals.activeEmployees} active employees`} />
           <Stat k="Total other expenses" v={money0(totals.otherExpense)} m="excl. payroll" />
+        </div>
+
+        {rows.length > 1 && (
+          <div className="note info">
+            <strong>Where to look first:</strong> {worst.companyName} has the lowest net cashflow this month ({money(worst.netCashflow)}).
+            {" "}Payroll makes up {payrollShare}% of total costs across every company combined.
+          </div>
+        )}
+
+        <div className="card">
+          <div className="hd"><h2>Income vs. expenses by company — {ym}</h2></div>
+          <div className="bd">
+            <IncomeExpenseByCompanyChart rows={rows.map((r) => ({ label: r.companyName, income: r.income, expense: r.payrollCost + r.otherExpense }))} />
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="hd"><h2>Net cashflow by company — {ym}</h2></div>
+          <div className="bd">
+            <NetCashflowByCompanyChart rows={rows.map((r) => ({ label: r.companyName, value: r.netCashflow }))} />
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="hd">
+            <h2>Combined trend — {year}</h2>
+            <form method="get" className="flex items-center gap-2">
+              <input className="inp" type="number" name="year" defaultValue={year} style={{ width: 100 }} />
+              <button className="btn sm" type="submit">Go</button>
+            </form>
+          </div>
+          <div className="bd">
+            <IncomeExpenseTrendChart months={trend} />
+          </div>
         </div>
 
         <div className="card">
