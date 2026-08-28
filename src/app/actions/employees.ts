@@ -95,6 +95,29 @@ export async function deleteEmployeeAction(formData: FormData) {
   redirect("/admin/employees");
 }
 
+/** A narrow update for just the four bank-payment fields — used by the
+ *  Bank file page's inline edit row, so fixing a wrong account number
+ *  there can't accidentally wipe out the rest of an employee's record
+ *  the way resubmitting the full updateEmployeeAction form would if any
+ *  other field were left blank. */
+export async function updateEmployeeBankDetailsAction(formData: FormData) {
+  await requireAdmin();
+  const id = s(formData, "id");
+  if (!id) return;
+  await db
+    .update(employees)
+    .set({
+      bankName: s(formData, "bankName"),
+      bankCode: s(formData, "bankCode"),
+      branchCode: s(formData, "branchCode"),
+      acct: s(formData, "acct"),
+      updatedAt: new Date(),
+    })
+    .where(eq(employees.id, id));
+  revalidatePath("/admin/bank");
+  revalidatePath("/admin/employees");
+}
+
 export async function setEmployeeAllowancesAction(formData: FormData) {
   await requireAdmin();
   const employeeId = s(formData, "employeeId");
