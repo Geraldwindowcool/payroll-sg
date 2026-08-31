@@ -177,18 +177,18 @@ export default async function AdminTimesheetPage({ searchParams }: { searchParam
                         </td>
                         <td className="n">{n2(calc.days)} <span className="hint">/ {n2(calc.stdWeek)}</span></td>
                         <td className="n"><input className="inp num" type="number" step="0.5" name={`days_${w.i}`} defaultValue={ts.days ?? ""} placeholder="auto" style={{ width: 80 }} /></td>
-                        <td className="n"><input className="inp num" type="number" step="0.5" min="0" name={`ot_${w.i}`} defaultValue={ts.ot || ""} style={{ width: 75 }} /></td>
-                        <td className="n"><input className="inp num" type="number" step="0.5" min="0" name={`xot_${w.i}`} defaultValue={ts.xot || ""} style={{ width: 75 }} /></td>
-                        <td className="n"><input className="inp num" type="number" step="0.5" min="0" name={`sunOt_${w.i}`} defaultValue={ts.sunOt || ""} style={{ width: 75 }} /></td>
-                        <td className="n"><input className="inp num" type="number" step="0.5" min="0" name={`rdS_${w.i}`} defaultValue={ts.rdS || ""} style={{ width: 75 }} /></td>
-                        <td className="n"><input className="inp num" type="number" step="0.5" min="0" name={`rdF_${w.i}`} defaultValue={ts.rdF || ""} style={{ width: 75 }} /></td>
-                        <td className="n"><input className="inp num" type="number" step="0.5" min="0" name={`ph_${w.i}`} defaultValue={ts.ph || ""} style={{ width: 75 }} /></td>
+                        <td className="n"><input className="inp num" type="number" step="any" min="0" name={`ot_${w.i}`} defaultValue={ts.ot || ""} style={{ width: 75 }} /></td>
+                        <td className="n"><input className="inp num" type="number" step="any" min="0" name={`xot_${w.i}`} defaultValue={ts.xot || ""} style={{ width: 75 }} /></td>
+                        <td className="n"><input className="inp num" type="number" step="any" min="0" name={`sunOt_${w.i}`} defaultValue={ts.sunOt || ""} style={{ width: 75 }} /></td>
+                        <td className="n"><input className="inp num" type="number" step="any" min="0" name={`rdS_${w.i}`} defaultValue={ts.rdS || ""} style={{ width: 75 }} /></td>
+                        <td className="n"><input className="inp num" type="number" step="any" min="0" name={`rdF_${w.i}`} defaultValue={ts.rdF || ""} style={{ width: 75 }} /></td>
+                        <td className="n"><input className="inp num" type="number" step="any" min="0" name={`ph_${w.i}`} defaultValue={ts.ph || ""} style={{ width: 75 }} /></td>
                         <td className="n hint">{n2(leave.mc)}</td>
                         <td className="n hint">{n2(leave.pl)}</td>
                         <td className="n hint">{n2(leave.ul)}</td>
                         {linkedAllowances.map((a) => (
                           <td key={a.id} className="n">
-                            <input className="inp num" type="number" step="0.5" min="0" name={`qty_${w.i}_${a.id}`} defaultValue={ts.allowanceQty[a.id] || ""} style={{ width: 75 }} />
+                            <input className="inp num" type="number" step="any" min="0" name={`qty_${w.i}_${a.id}`} defaultValue={ts.allowanceQty[a.id] || ""} style={{ width: 75 }} />
                           </td>
                         ))}
                       </tr>
