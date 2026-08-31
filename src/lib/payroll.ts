@@ -566,9 +566,17 @@ export function calcMonth(
   const levy = emp.res === "FW" ? emp.levyAmt : 0;
   const cdac = emp.cdacOn ? emp.cdacAmt || 0 : 0;
 
-  let net = w.gross - cpf.ee - w.ded - cdac;
-  if (company.roundNet) net = Math.floor(net * 20) / 20;
-  net = Math.round(net * 100) / 100;
+  // Round to the nearest cent first — the raw sum above is the tail end of a
+  // long chain of floating-point arithmetic, so a net that's genuinely
+  // $1876.60 can arrive as something like 1876.599999999998. Flooring that
+  // straight to the nearest nickel below would land on 1876.55, a whole
+  // nickel short of correct. Snapping to cents first removes that noise
+  // before the nickel-rounding (or the final display-rounding) ever sees it.
+  let net = Math.round((w.gross - cpf.ee - w.ded - cdac) * 100) / 100;
+  if (company.roundNet) {
+    const cents = Math.round(net * 100);
+    net = (Math.floor(cents / 5) * 5) / 100;
+  }
 
   const cost = w.gross + cpf.er + sdl + levy;
   const otherDed = w.ded + cdac;

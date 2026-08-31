@@ -287,6 +287,47 @@ describe("Foreign worker levy", () => {
   });
 });
 
+describe("Round net pay down to nearest 5 cents", () => {
+  it("floors a net that isn't already a nickel multiple", () => {
+    const co = company({ roundNet: true });
+    const e = emp({ salary: 3000, pattern: 5 });
+    const weeks = weeksFor("2026-08");
+    const m = calcMonth(co, e, "2026-08", weeks, EMPTY_MONTHLY_ITEM, { ow: 0, aw: 0 }, [], []);
+    expect(Math.round(m.net * 100) % 5).toBe(0);
+  });
+
+  it("does nothing when the toggle is off", () => {
+    const co = company({ roundNet: false });
+    const e = emp({ salary: 3007, pattern: 5 });
+    const weeks = weeksFor("2026-08");
+    const m = calcMonth(co, e, "2026-08", weeks, EMPTY_MONTHLY_ITEM, { ow: 0, aw: 0 }, [], []);
+    tol(m.net, m.gross - m.cpf.ee, 0.005);
+  });
+
+  // Regression: a real employee's real August 2026 pay ($2,100 base, foreign
+  // worker pattern 5.5, 2.5 days of unpaid leave) produces a gross of
+  // 1876.595744680851 — a value whose *true* rounded-to-the-cent amount is
+  // an exact nickel ($1,876.60), but which floating-point arithmetic
+  // represents as just a hair under that. The old formula did
+  // Math.floor(net * 20) / 20 directly on that noisy raw value, which came
+  // out to $1,876.55 — a whole 5 cents short of the real, correct rounddown.
+  // Snapping to the cent before flooring to the nickel fixes it.
+  it("doesn't shortchange a net that's already an exact nickel, even when float noise puts it a hair under", () => {
+    const co = company({ roundNet: true, sdlEnabled: true });
+    const e = emp({ salary: 2100, pattern: 5.5, res: "FW" });
+    const weeks = weeksFor("2026-08", {
+      0: { ul: 0.5 },
+      1: { ul: 0.5 },
+      2: { ul: 0.5 },
+      3: { ul: 0.5 },
+      4: { ul: 0.5 },
+    });
+    const m = calcMonth(co, e, "2026-08", weeks, EMPTY_MONTHLY_ITEM, { ow: 0, aw: 0 }, [], []);
+    tol(m.gross, 1876.595744680851, 0.0000001); // confirms this is really the noisy boundary case
+    expect(m.net).toBe(1876.6); // NOT 1876.55
+  });
+});
+
 describe("CDAC / community fund", () => {
   it("deducts the configured monthly amount from net pay", () => {
     const co = company();
