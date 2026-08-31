@@ -78,6 +78,13 @@
       "when": 1788147483594,
       "tag": "0010_ambiguous_madame_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788150393880,
+      "tag": "0011_curious_calypso",
+      "breakpoints": true
     }
   ]
 }

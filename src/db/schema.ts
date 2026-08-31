@@ -284,12 +284,15 @@ export const timesheetWeeks = pgTable(
     ym: text("ym").notNull(), // "YYYY-MM"
     weekIndex: integer("week_index").notNull(),
     days: numeric("days", { mode: "number", precision: 4, scale: 2 }), // manual override; null = auto
-    ot: numeric("ot", { mode: "number", precision: 6, scale: 2 }).notNull().default(0),
-    xot: numeric("xot", { mode: "number", precision: 6, scale: 2 }).notNull().default(0),
-    sunOt: numeric("sun_ot", { mode: "number", precision: 6, scale: 2 }).notNull().default(0),
-    rdS: numeric("rd_s", { mode: "number", precision: 4, scale: 2 }).notNull().default(0),
-    rdF: numeric("rd_f", { mode: "number", precision: 4, scale: 2 }).notNull().default(0),
-    ph: numeric("ph", { mode: "number", precision: 4, scale: 2 }).notNull().default(0),
+    // scale 4 = ten-thousandths of an hour — plenty of headroom past what
+    // anyone would type by hand, so an exact value like 1.016 is stored
+    // exactly instead of getting rounded to the nearest hundredth.
+    ot: numeric("ot", { mode: "number", precision: 8, scale: 4 }).notNull().default(0),
+    xot: numeric("xot", { mode: "number", precision: 8, scale: 4 }).notNull().default(0),
+    sunOt: numeric("sun_ot", { mode: "number", precision: 8, scale: 4 }).notNull().default(0),
+    rdS: numeric("rd_s", { mode: "number", precision: 6, scale: 4 }).notNull().default(0),
+    rdF: numeric("rd_f", { mode: "number", precision: 6, scale: 4 }).notNull().default(0),
+    ph: numeric("ph", { mode: "number", precision: 6, scale: 4 }).notNull().default(0),
     mc: numeric("mc", { mode: "number", precision: 4, scale: 2 }).notNull().default(0),
     pl: numeric("pl", { mode: "number", precision: 4, scale: 2 }).notNull().default(0),
     ul: numeric("ul", { mode: "number", precision: 4, scale: 2 }).notNull().default(0),
