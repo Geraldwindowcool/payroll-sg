@@ -3,6 +3,7 @@ import EmployeePicker from "@/components/EmployeePicker";
 import MonthPicker from "@/components/MonthPicker";
 import SubmitButton from "@/components/SubmitButton";
 import LeaveCalendar from "@/components/LeaveCalendar";
+import McAttachments from "@/components/McAttachments";
 import { getActiveCompany } from "@/lib/activeCompany";
 import {
   getEmployees,
@@ -13,6 +14,7 @@ import {
   getLeaveUsageForYear,
   toCompanyConfig,
 } from "@/lib/payrollService";
+import { getMcAttachments } from "@/lib/mcAttachmentsService";
 import { calcWeek, weeksOfMonth, n2 } from "@/lib/payroll";
 import { deriveWeekLeaveTotals, sumLeaveTotals } from "@/lib/leave";
 import { allowedEmployeeIds } from "@/lib/access";
@@ -72,11 +74,12 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
   const selected = employees.find((e) => e.id === sp.emp) ?? employees[0];
 
   const year = Number(ym.split("-")[0]);
-  const [weekTs, leaveEntries, linksByEmp, yearUsage] = await Promise.all([
+  const [weekTs, leaveEntries, linksByEmp, yearUsage, mcAttachments] = await Promise.all([
     getWeekTimesheets(selected.id, ym),
     getLeaveDaysForEmployeeMonth(selected.id, ym),
     getEmployeeAllowanceLinks([selected.id]),
     getLeaveUsageForYear(company.id, year),
+    getMcAttachments(selected.id, ym),
   ]);
 
   const companyConfig = toCompanyConfig(company);
@@ -146,8 +149,9 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
                 <span className="mini-stat"><span className="k">{year} leave used</span><span className="v">{n2(usedThisYear.pl)} / {selected.alEntitlement}</span></span>
               </div>
             </div>
-            <div className="bd">
+            <div className="bd stack">
               <LeaveCalendar ym={ym} pattern={selected.pattern} initial={leaveEntries} companyId={company.id} employeeId={selected.id} />
+              <McAttachments companyId={company.id} employeeId={selected.id} ym={ym} initial={mcAttachments} />
             </div>
           </div>
 

@@ -64,6 +64,13 @@
       "when": 1787755048803,
       "tag": "0008_curly_carnage",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788140411965,
+      "tag": "0009_curved_cargill",
+      "breakpoints": true
     }
   ]
 }

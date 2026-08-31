@@ -14,6 +14,7 @@ import {
   uniqueIndex,
   index,
   pgEnum,
+  customType,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -21,6 +22,14 @@ const id = () => text("id").primaryKey().$defaultFn(() => createId());
 // Foreign-key column helper — takes the actual snake_case column name so it
 // never collides with the "id" primary key column on the same table.
 const fk = (column: string) => text(column).notNull();
+
+// Drizzle has no built-in Postgres bytea column, so this defines one:
+// raw file bytes in, a Node Buffer out — used for MC attachment files.
+const bytea = customType<{ data: Buffer }>({
+  dataType() {
+    return "bytea";
+  },
+});
 
 export const roleEnum = pgEnum("role", ["ADMIN", "STAFF"]);
 export const residencyEnum = pgEnum("residency", ["SC", "PR", "FW"]);
@@ -218,6 +227,32 @@ export const leaveDays = pgTable(
     uniqueIndex("leave_day_unique").on(t.employeeId, t.date),
     index("leave_day_company_date_idx").on(t.companyId, t.date),
   ]
+);
+
+// A photo or PDF of an employee's actual MC slip, kept alongside the
+// dates marked on the leave calendar for that month — the calendar marks
+// WHEN someone was out; this is the paperwork proving why. Scoped to a
+// month rather than a specific date range: simpler to attach ("the MC for
+// August"), and a month can hold more than one file if there were
+// multiple MC episodes. Stored directly in Postgres rather than a
+// separate object-storage service — this app has none set up, and MC
+// photos are small and infrequent enough that a bytea column is the
+// simplest thing that works, not a scale compromise.
+export const mcAttachments = pgTable(
+  "mc_attachments",
+  {
+    id: id(),
+    companyId: fk("company_id"),
+    employeeId: fk("employee_id"),
+    ym: text("ym").notNull(), // "YYYY-MM"
+    fileName: text("file_name").notNull(),
+    mimeType: text("mime_type").notNull(),
+    fileSize: integer("file_size").notNull(),
+    fileData: bytea("file_data").notNull(),
+    uploadedByUserId: text("uploaded_by_user_id"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("mc_attachments_employee_ym_idx").on(t.employeeId, t.ym)]
 );
 
 // Which employees a STAFF login is allowed to see/edit on the attendance
@@ -452,3 +487,5 @@ export type BudgetCategory = typeof budgetCategories.$inferSelect;
 export type BudgetEntry = typeof budgetEntries.$inferSelect;
 export type XeroConnection = typeof xeroConnections.$inferSelect;
 export type PayrollCashAdjustment = typeof payrollCashAdjustments.$inferSelect;
+export type McAttachment = typeof mcAttachments.$inferSelect;
+export type McAttachmentMeta = Omit<McAttachment, "fileData">;

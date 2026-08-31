@@ -3,8 +3,10 @@ import EmployeePicker from "@/components/EmployeePicker";
 import MonthPicker from "@/components/MonthPicker";
 import SubmitButton from "@/components/SubmitButton";
 import LeaveCalendar from "@/components/LeaveCalendar";
+import McAttachments from "@/components/McAttachments";
 import { getActiveCompany } from "@/lib/activeCompany";
 import { getEmployees, getLeaveDaysForEmployeeMonth, getLeaveUsageForYear } from "@/lib/payrollService";
+import { getMcAttachments } from "@/lib/mcAttachmentsService";
 import { weeksOfMonth, n2 } from "@/lib/payroll";
 import { deriveWeekLeaveTotals, sumLeaveTotals } from "@/lib/leave";
 import { allowedEmployeeIds } from "@/lib/access";
@@ -53,9 +55,10 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
   const selected = employees.find((e) => e.id === sp.emp) ?? employees[0];
   const year = Number(ym.split("-")[0]);
 
-  const [leaveEntries, yearUsage] = await Promise.all([
+  const [leaveEntries, yearUsage, mcAttachments] = await Promise.all([
     getLeaveDaysForEmployeeMonth(selected.id, ym),
     getLeaveUsageForYear(company.id, year),
+    getMcAttachments(selected.id, ym),
   ]);
 
   const weeks = weeksOfMonth(ym);
@@ -103,6 +106,7 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
                 MC and paid leave don&apos;t change anyone&apos;s pay — they&apos;re recorded for the record. Unpaid leave automatically reduces that week&apos;s pay.
               </div>
               <LeaveCalendar ym={ym} pattern={selected.pattern} initial={leaveEntries} companyId={company.id} employeeId={selected.id} />
+              <McAttachments companyId={company.id} employeeId={selected.id} ym={ym} initial={mcAttachments} />
             </div>
           </div>
 
