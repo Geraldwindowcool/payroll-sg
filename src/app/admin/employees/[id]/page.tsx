@@ -65,6 +65,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
                     </select>
                   </label>
                   <label className="f"><span>OT multiplier override</span><input className="inp num" type="number" step="0.1" name="otMult" defaultValue={emp.otMult ?? ""} placeholder="company default" /></label>
+                  <label className="f"><span>Sunday OT multiplier override</span><input className="inp num" type="number" step="0.1" name="sunOtMult" defaultValue={emp.sunOtMult ?? ""} placeholder="company default" /></label>
                   <label className="f"><span>Levy tier (foreign worker)</span>
                     <select className="inp" name="levyId" defaultValue={emp.levyId ?? ""}>
                       <option value="">— none —</option>

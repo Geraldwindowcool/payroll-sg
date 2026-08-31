@@ -66,7 +66,7 @@ export default async function PayRunPage({ searchParams }: { searchParams: Promi
               <tbody>
                 {rows.map((r) => {
                   const flags: string[] = [];
-                  if (r.otHrs + r.xotHrs > 72) flags.push("OT > 72h");
+                  if (r.otHrs + r.xotHrs + r.sunOtHrs > 72) flags.push("OT > 72h");
                   if (r.incomplete) flags.push("Incomplete month");
                   if (r.leaveOver) flags.push("Leave exceeds week");
                   if (r.dedWarn) flags.push("Deductions > 50%");

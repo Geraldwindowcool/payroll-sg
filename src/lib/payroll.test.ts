@@ -40,6 +40,7 @@ const DEFAULT_CPF: CpfConfig = {
 const company = (over: Partial<CompanyConfig> = {}): CompanyConfig => ({
   hoursPerWeek: 44,
   otMult: 1.5,
+  sunOtMult: 2,
   sdlEnabled: true,
   roundNet: false,
   cpf: DEFAULT_CPF,
@@ -56,6 +57,7 @@ const emp = (over: Partial<EmployeeCalc> = {}): EmployeeCalc => ({
   pattern: 5,
   otElig: true,
   otMult: null,
+  sunOtMult: null,
   cdacOn: false,
   cdacAmt: 0,
   levyAmt: 0,
@@ -163,6 +165,36 @@ describe("Overtime + working days", () => {
     const wages = calcWages(co, e, "2026-08", weeks, EMPTY_MONTHLY_ITEM, [], []);
     const hourly = (12 * 4400) / (52 * 44);
     tol(wages.ot, hourly * 1.5 * 10, 0.01);
+  });
+
+  it("Sunday OT defaults to 2x hourly, separate from the regular OT multiplier", () => {
+    const co = company(); // otMult 1.5, sunOtMult 2
+    const e = emp({ salary: 4400, pattern: 5 });
+    const weeks = weeksFor("2026-08", { 0: { ot: 10, sunOt: 4 } });
+    const wages = calcWages(co, e, "2026-08", weeks, EMPTY_MONTHLY_ITEM, [], []);
+    const hourly = (12 * 4400) / (52 * 44);
+    tol(wages.ot, hourly * 1.5 * 10, 0.01);
+    tol(wages.sunOt, hourly * 2 * 4, 0.01);
+    tol(wages.sunOtHrs, 4);
+    // Sunday OT is Ordinary Wage (CPF-subject) just like regular OT is.
+    tol(wages.ow, wages.basic + wages.ot + wages.sunOt, 0.01);
+  });
+
+  it("an employee's own Sunday OT multiplier overrides the company default", () => {
+    const co = company(); // sunOtMult 2
+    const e = emp({ salary: 4400, pattern: 5, sunOtMult: 3 });
+    const weeks = weeksFor("2026-08", { 0: { sunOt: 2 } });
+    const wages = calcWages(co, e, "2026-08", weeks, EMPTY_MONTHLY_ITEM, [], []);
+    const hourly = (12 * 4400) / (52 * 44);
+    tol(wages.sunOt, hourly * 3 * 2, 0.01);
+  });
+
+  it("Sunday OT pays nothing when the employee isn't OT-eligible", () => {
+    const co = company();
+    const e = emp({ salary: 4400, pattern: 5, otElig: false });
+    const weeks = weeksFor("2026-08", { 0: { sunOt: 5 } });
+    const wages = calcWages(co, e, "2026-08", weeks, EMPTY_MONTHLY_ITEM, [], []);
+    tol(wages.sunOt, 0);
   });
 
   it("6-day week counts Saturday as a full day", () => {

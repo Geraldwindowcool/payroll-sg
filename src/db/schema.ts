@@ -118,6 +118,7 @@ export const companies = pgTable("companies", {
   ref: text("ref").notNull().default("SALARY"),
   hoursPerWeek: numeric("hours_per_week", { mode: "number", precision: 6, scale: 2 }).notNull().default(44),
   otMult: numeric("ot_mult", { mode: "number", precision: 4, scale: 2 }).notNull().default(1.5),
+  sunOtMult: numeric("sun_ot_mult", { mode: "number", precision: 4, scale: 2 }).notNull().default(2),
   sdlEnabled: boolean("sdl_enabled").notNull().default(true),
   roundNet: boolean("round_net").notNull().default(false),
   cpf: jsonb("cpf").notNull().$type<typeof DEFAULT_CPF>().default(DEFAULT_CPF as any),
@@ -167,6 +168,7 @@ export const employees = pgTable(
     pattern: numeric("pattern", { mode: "number", precision: 3, scale: 1 }).notNull().default(5),
     otElig: boolean("ot_elig").notNull().default(true),
     otMult: numeric("ot_mult", { mode: "number", precision: 4, scale: 2 }),
+    sunOtMult: numeric("sun_ot_mult", { mode: "number", precision: 4, scale: 2 }),
     levyId: text("levy_id"),
     bankName: text("bank_name").notNull().default(""),
     bankCode: text("bank_code").notNull().default(""),
@@ -284,6 +286,7 @@ export const timesheetWeeks = pgTable(
     days: numeric("days", { mode: "number", precision: 4, scale: 2 }), // manual override; null = auto
     ot: numeric("ot", { mode: "number", precision: 6, scale: 2 }).notNull().default(0),
     xot: numeric("xot", { mode: "number", precision: 6, scale: 2 }).notNull().default(0),
+    sunOt: numeric("sun_ot", { mode: "number", precision: 6, scale: 2 }).notNull().default(0),
     rdS: numeric("rd_s", { mode: "number", precision: 4, scale: 2 }).notNull().default(0),
     rdF: numeric("rd_f", { mode: "number", precision: 4, scale: 2 }).notNull().default(0),
     ph: numeric("ph", { mode: "number", precision: 4, scale: 2 }).notNull().default(0),

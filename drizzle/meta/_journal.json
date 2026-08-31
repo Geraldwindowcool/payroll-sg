@@ -71,6 +71,13 @@
       "when": 1788140411965,
       "tag": "0009_curved_cargill",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788147483594,
+      "tag": "0010_ambiguous_madame_masque",
+      "breakpoints": true
     }
   ]
 }

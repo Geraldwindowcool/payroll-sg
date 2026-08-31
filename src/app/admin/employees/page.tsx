@@ -89,6 +89,7 @@ export default async function EmployeesPage() {
                     </select>
                   </label>
                   <label className="f"><span>OT multiplier override</span><input className="inp num" type="number" step="0.1" name="otMult" placeholder="company default" /></label>
+                  <label className="f"><span>Sunday OT multiplier override</span><input className="inp num" type="number" step="0.1" name="sunOtMult" placeholder="company default" /></label>
                 </div>
                 <div className="toggles">
                   <label className="chk"><input type="checkbox" name="otElig" defaultChecked /> Eligible for overtime</label>

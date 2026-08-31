@@ -29,6 +29,7 @@ export async function updateCompanyAction(formData: FormData) {
       ref: s(formData, "ref"),
       hoursPerWeek: num(formData, "hoursPerWeek", 44),
       otMult: num(formData, "otMult", 1.5),
+      sunOtMult: num(formData, "sunOtMult", 2),
       sdlEnabled: formData.get("sdlEnabled") === "on",
       roundNet: formData.get("roundNet") === "on",
       updatedAt: new Date(),

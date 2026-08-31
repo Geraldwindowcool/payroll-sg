@@ -141,6 +141,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                 <label className="f"><span>Payment reference</span><input className="inp" name="ref" defaultValue={company.ref} /></label>
                 <label className="f"><span>Standard hours / week</span><input className="inp num" type="number" step="0.5" name="hoursPerWeek" defaultValue={company.hoursPerWeek} /></label>
                 <label className="f"><span>Default OT multiplier</span><input className="inp num" type="number" step="0.1" name="otMult" defaultValue={company.otMult} /></label>
+                <label className="f"><span>Default Sunday OT multiplier</span><input className="inp num" type="number" step="0.1" name="sunOtMult" defaultValue={company.sunOtMult} /></label>
               </div>
               <div className="toggles">
                 <label className="chk"><input type="checkbox" name="sdlEnabled" defaultChecked={company.sdlEnabled} /> SDL enabled</label>

@@ -68,6 +68,7 @@ export default async function PayslipsPage({ searchParams }: { searchParams: Pro
                         {r.ot > 0 && <tr><td>Overtime ({r.otHrs}h)</td><td className="n">{money(r.ot)}</td></tr>
                         }
                         {r.xot > 0 && <tr><td>Extra overtime ({r.xotHrs}h)</td><td className="n">{money(r.xot)}</td></tr>}
+                        {r.sunOt > 0 && <tr><td>Sunday overtime ({r.sunOtHrs}h)</td><td className="n">{money(r.sunOt)}</td></tr>}
                         {r.rd > 0 && <tr><td>Rest day pay</td><td className="n">{money(r.rd)}</td></tr>}
                         {r.ph > 0 && <tr><td>Public holiday pay</td><td className="n">{money(r.ph)}</td></tr>}
                         {(r.alCpf > 0 || r.alNon > 0) && <tr><td>Allowances</td><td className="n">{money(r.alCpf + r.alNon)}</td></tr>}

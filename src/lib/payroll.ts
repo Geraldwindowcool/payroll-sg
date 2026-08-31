@@ -23,6 +23,7 @@ export type AllowanceBasis = "DAY" | "HOUR" | "FIXED";
 export type CompanyConfig = {
   hoursPerWeek: number;
   otMult: number;
+  sunOtMult: number;
   sdlEnabled: boolean;
   roundNet: boolean;
   cpf: CpfConfig;
@@ -38,6 +39,7 @@ export type EmployeeCalc = {
   pattern: number; // 5, 5.5 or 6
   otElig: boolean;
   otMult: number | null; // null = use company default
+  sunOtMult: number | null; // null = use company default
   cdacOn: boolean;
   cdacAmt: number;
   levyAmt: number; // resolved monthly levy amount (0 unless res === "FW")
@@ -58,6 +60,7 @@ export type WeekTimesheet = {
   days: number | null; // manual override; null = auto
   ot: number;
   xot: number;
+  sunOt: number; // overtime worked on a Sunday — paid at its own (higher) multiplier
   rdS: number;
   rdF: number;
   ph: number;
@@ -83,6 +86,7 @@ export const EMPTY_WEEK = (weekIndex: number): WeekTimesheet => ({
   days: null,
   ot: 0,
   xot: 0,
+  sunOt: 0,
   rdS: 0,
   rdF: 0,
   ph: 0,
@@ -308,10 +312,13 @@ export type WeekResult = {
   hourly: number;
   daily: number;
   mult: number;
+  sunMult: number;
   otHrs: number;
   xotHrs: number;
+  sunOtHrs: number;
   otPay: number;
   xotPay: number;
+  sunOtPay: number;
   rdPay: number;
   phPay: number;
   rdS: number;
@@ -354,11 +361,14 @@ export function calcWeek(
   const hourly = company.hoursPerWeek > 0 ? (12 * salary) / (52 * company.hoursPerWeek) : 0;
   const daily = pattern > 0 ? (12 * salary) / (52 * pattern) : 0;
   const mult = emp.otMult || company.otMult || 1.5;
+  const sunMult = emp.sunOtMult || company.sunOtMult || 2;
 
   const otHrs = t.ot || 0,
-    xotHrs = t.xot || 0;
+    xotHrs = t.xot || 0,
+    sunOtHrs = t.sunOt || 0;
   const otPay = emp.otElig === false ? 0 : hourly * mult * otHrs;
   const xotPay = emp.otElig === false ? 0 : hourly * mult * xotHrs;
+  const sunOtPay = emp.otElig === false ? 0 : hourly * sunMult * sunOtHrs;
   const rdPay = (t.rdS || 0) * 1 * daily + (t.rdF || 0) * 2 * daily;
   const phPay = (t.ph || 0) * daily;
 
@@ -387,10 +397,13 @@ export function calcWeek(
     hourly,
     daily,
     mult,
+    sunMult,
     otHrs,
     xotHrs,
+    sunOtHrs,
     otPay,
     xotPay,
+    sunOtPay,
     rdPay,
     phPay,
     rdS: t.rdS || 0,
@@ -403,7 +416,7 @@ export function calcWeek(
     alLines,
     alCpf,
     alNon,
-    extras: otPay + xotPay + rdPay + phPay + alCpf + alNon,
+    extras: otPay + xotPay + sunOtPay + rdPay + phPay + alCpf + alNon,
   };
 }
 
@@ -417,12 +430,14 @@ export type WagesResult = {
   basic: number;
   ot: number;
   xot: number;
+  sunOt: number;
   rd: number;
   ph: number;
   alCpf: number;
   alNon: number;
   otHrs: number;
   xotHrs: number;
+  sunOtHrs: number;
   mc: number;
   pl: number;
   ul: number;
@@ -463,12 +478,14 @@ export function calcWages(
 
   const ot = weeks.reduce((s, w) => s + w.otPay, 0);
   const xot = weeks.reduce((s, w) => s + w.xotPay, 0);
+  const sunOt = weeks.reduce((s, w) => s + w.sunOtPay, 0);
   const rd = weeks.reduce((s, w) => s + w.rdPay, 0);
   const ph = weeks.reduce((s, w) => s + w.phPay, 0);
   const alCpf = weeks.reduce((s, w) => s + w.alCpf, 0);
   const alNon = weeks.reduce((s, w) => s + w.alNon, 0);
   const otHrs = weeks.reduce((s, w) => s + w.otHrs, 0);
   const xotHrs = weeks.reduce((s, w) => s + w.xotHrs, 0);
+  const sunOtHrs = weeks.reduce((s, w) => s + w.sunOtHrs, 0);
   const mc = weeks.reduce((s, w) => s + w.mc, 0);
   const pl = weeks.reduce((s, w) => s + w.pl, 0);
   const ul = weeks.reduce((s, w) => s + w.ul, 0);
@@ -476,7 +493,7 @@ export function calcWages(
 
   const { bonus, adj, reimb, ded, adjLbl, reimbLbl, dedLbl, note } = monthlyItem;
 
-  const ow = basic + ot + xot + rd + ph + alCpf + adj; // Ordinary Wages
+  const ow = basic + ot + xot + sunOt + rd + ph + alCpf + adj; // Ordinary Wages
   const aw = bonus; // Additional Wages
   const gross = ow + alNon + reimb + aw;
 
@@ -490,12 +507,14 @@ export function calcWages(
     basic,
     ot,
     xot,
+    sunOt,
     rd,
     ph,
     alCpf,
     alNon,
     otHrs,
     xotHrs,
+    sunOtHrs,
     mc,
     pl,
     ul,

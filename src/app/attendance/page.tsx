@@ -100,6 +100,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
     pattern: selected.pattern,
     otElig: selected.otElig,
     otMult: selected.otMult,
+    sunOtMult: selected.sunOtMult,
     cdacOn: selected.cdacOn,
     cdacAmt: selected.cdacAmt ?? 0,
     levyAmt: 0,
@@ -133,7 +134,12 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
           </div>
         </div>
 
-        <form action={saveAttendanceAction} className="stack-lg">
+        {/* key forces a full remount on employee/month change — without it, React
+            reuses the same <input> DOM nodes across selections, and since these
+            are uncontrolled (defaultValue), a field like OT hours or public
+            holidays that already had a value can visibly "stick" from whoever
+            was viewed before, even though the underlying data is correct. */}
+        <form key={`${selected.id}-${ym}`} action={saveAttendanceAction} className="stack-lg">
           <input type="hidden" name="companyId" value={company.id} />
           <input type="hidden" name="employeeId" value={selected.id} />
           <input type="hidden" name="ym" value={ym} />
@@ -170,6 +176,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
                       <th className="n">Days override</th>
                       <th className="n">OT hrs</th>
                       <th className="n">Extra OT</th>
+                      <th className="n">Sunday OT</th>
                       <th className="n">Rest day 1×</th>
                       <th className="n">Rest day 2×</th>
                       <th className="n">Public hol.</th>
@@ -190,6 +197,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
                         <td className="n"><input className="inp num" type="number" step="0.5" name={`days_${w.i}`} defaultValue={ts.days ?? ""} placeholder="auto" style={{ width: 80 }} /></td>
                         <td className="n"><input className="inp num" type="number" step="0.5" min="0" name={`ot_${w.i}`} defaultValue={ts.ot || ""} style={{ width: 75 }} /></td>
                         <td className="n"><input className="inp num" type="number" step="0.5" min="0" name={`xot_${w.i}`} defaultValue={ts.xot || ""} style={{ width: 75 }} /></td>
+                        <td className="n"><input className="inp num" type="number" step="0.5" min="0" name={`sunOt_${w.i}`} defaultValue={ts.sunOt || ""} style={{ width: 75 }} /></td>
                         <td className="n"><input className="inp num" type="number" step="0.5" min="0" name={`rdS_${w.i}`} defaultValue={ts.rdS || ""} style={{ width: 75 }} /></td>
                         <td className="n"><input className="inp num" type="number" step="0.5" min="0" name={`rdF_${w.i}`} defaultValue={ts.rdF || ""} style={{ width: 75 }} /></td>
                         <td className="n"><input className="inp num" type="number" step="0.5" min="0" name={`ph_${w.i}`} defaultValue={ts.ph || ""} style={{ width: 75 }} /></td>

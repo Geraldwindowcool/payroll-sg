@@ -39,6 +39,7 @@ function employeeFields(formData: FormData) {
     pattern: num(formData, "pattern", 5),
     otElig: bool(formData, "otElig"),
     otMult: numOrNull(formData, "otMult"),
+    sunOtMult: numOrNull(formData, "sunOtMult"),
     levyId: s(formData, "levyId") || null,
     bankName: s(formData, "bankName"),
     bankCode: s(formData, "bankCode"),

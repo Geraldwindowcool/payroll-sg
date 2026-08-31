@@ -89,6 +89,7 @@ export async function saveTimesheetMonthAction(formData: FormData) {
         days: numOrNull(formData.get(`days_${w.i}`)),
         ot: numOrZero(formData.get(`ot_${w.i}`)),
         xot: numOrZero(formData.get(`xot_${w.i}`)),
+        sunOt: numOrZero(formData.get(`sunOt_${w.i}`)),
         rdS: numOrZero(formData.get(`rdS_${w.i}`)),
         rdF: numOrZero(formData.get(`rdF_${w.i}`)),
         ph: numOrZero(formData.get(`ph_${w.i}`)),
